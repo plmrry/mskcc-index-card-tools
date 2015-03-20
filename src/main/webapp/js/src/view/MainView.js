@@ -28,6 +28,10 @@ var MainView = Backbone.View.extend({
 		//self.$el.find("#tab-prediction-background").html(
 		//	_.template($("#prediction_bg_template").html(), {}));
 
+		// TODO may need to change "el" to another tab reference
+		var mainControlsView = new MainControlsView({el: "#tab-home-page"});
+		mainControlsView.render();
+
 		//self.format();
 	},
 	adjustNavBar: function()

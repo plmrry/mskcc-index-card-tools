@@ -25,8 +25,9 @@
     <link href="css/jquery.cytoscape-panzoom.css" rel="stylesheet">
     <link href="//netdna.bootstrapcdn.com/font-awesome/3.2.1/css/font-awesome.css" rel="stylesheet">
 
-    <!-- Peralyzer; this should always be the last to call! -->
+    <!-- this should always be the last to call! -->
 	<link href="css/peralyzer.css" rel="stylesheet">
+	<link href="css/oncosign.css" rel="stylesheet">
 
     <!-- HTML5 shim, for IE6-8 support of HTML5 elements. All other JS at the end of file. -->
     <!--[if lt IE 9]>
@@ -60,10 +61,12 @@
 	<script src="js/src/component/GradientLegend.js"></script>
 	<script src="js/src/util/HeatMapDataUtil.js"></script>
 	<script src="js/src/util/MatrixParser.js"></script>
-	<script src="js/src/util/ViewUtil.js"></script>
 	<script src="js/src/util/SvgUtil.js"></script>
 	<script src="js/src/model/DataModel.js"></script-->
+	<script src="js/src/util/ViewUtil.js"></script>
+	<script src="js/src/util/DataUtil.js"></script>
 	<script src="js/src/view/MainView.js"></script>
+	<script src="js/src/view/MainControlsView.js"></script>
 	<script src="js/src/view/NotyView.js"></script>
 	<!--script src="js/src/view/HeatMapView.js"></script>
 	<script src="js/src/view/HeatMapTipView.js"></script>
@@ -180,9 +183,39 @@
 		{{errorMsg}}
 	</script>
 
-
 	<script type="text/template" id="select_item_template">
 		<option value="{{selectId}}">{{selectName}}</option>
+	</script>
+
+	<script type="text/template" id="upload_controls_template">
+		<div class="upload-controls">
+			<form class="form-horizontal data-file-form"
+			      enctype="multipart/form-data"
+			      method="post">
+				<table class="upload-controls-table">
+					<tr>
+						<td valign="top">
+							<div class="sample-list-upload-title">Upload Sample List</div>
+							<span class="file-input btn btn-default btn-file sample-upload-btn">
+								Select Sample List File <input class="sample-data" name="sample_list_file" type="file">
+							</span>
+							<div class="selected-sample-file-info"></div>
+						</td>
+						<td valign="top">
+							<div class="data-matrix-upload-title">Upload Data Matrix</div>
+							<span class="file-input btn btn-default btn-file data-upload-btn">
+								Select Data Matrix File <input class="matrix-data" name="data_matrix_file" type="file">
+							</span>
+							<div class="selected-data-file-info"></div>
+						</td>
+						<td valign="top">
+							<button class="btn btn-default submit-button" type="button">Visualize</button>
+						</td>
+					</tr>
+				</table>
+			</form>
+		</div>
+		<div class="oncosign-view"></div>
 	</script>
 
 	<div id="main_container"></div>
