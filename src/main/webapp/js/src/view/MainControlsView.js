@@ -61,7 +61,7 @@ var MainControlsView = Backbone.View.extend({
 				return;
 			}
 
-			DataUtil.postFile('upload/file',
+			DataUtil.postFile('upload/file/',
 				new FormData(dataUploadForm[0]),
 				// success callback
 				function(response) {
