@@ -12,15 +12,11 @@
 
     <context:property-placeholder location="classpath*:spring/oncosign.properties" />
 
-	<!--bean class="org.cbio.peralyzer.service.NetworkService" id="networkService">
-		<property name="networkModelsResource" value="${networkModels.location}"/>
+	<bean class="org.cbio.oncosign.service.OncosignService" id="oncosignService">
+		<property name="outputDirResource" value="${outputDir.location}"/>
 	</bean>
 
-	<bean class="org.cbio.peralyzer.service.HistogramDataService" id="histogramDataService">
-		<property name="histogramDataResource" value="${histogramData.location}"/>
-	</bean>
-
-	<bean class="org.cbio.peralyzer.service.MatrixDataService" id="matrixDataService">
+	<!--bean class="org.cbio.peralyzer.service.MatrixDataService" id="matrixDataService">
 		<property name="matrixDataResource" value="${matrixData.location}"/>
 	</bean-->
 
@@ -28,10 +24,4 @@
 		<!--<property name="pancanDataResource" value="${pancanData.location}"/>-->
 	<!--</bean>-->
 
-	<!--<bean class="org.cbio.graphviz.service.CustomizedContextService" id="customContextServe">-->
-		<!--<property name="pancanDataResource" value="${pancanData.location}"/>-->
-		<!--<property name="pcDataResource" value="${pcData.location}"/>-->
-		<!--<property name="rppaDataResource" value="${rppaData.location}"/>-->
-		<!--<property name="rFunctionResource" value="${rFunction.location}"/>-->
-	<!--</bean>-->
 </beans>
