@@ -14,6 +14,7 @@
 
 	<bean class="org.cbio.oncosign.service.OncosignService" id="oncosignService">
 		<property name="outputDirResource" value="${outputDir.location}"/>
+		<property name="propsResource" value="${oncosign.props}"/>
 	</bean>
 
 	<!--bean class="org.cbio.peralyzer.service.MatrixDataService" id="matrixDataService">

@@ -1,1 +1,2 @@
 outputDir.location=file:/tmp/
+oncosign.props=file:/data/oncosign/oncosign.props
