@@ -66,7 +66,8 @@ var MainControlsView = Backbone.View.extend({
 				// success callback
 				function(response) {
 					// TODO process the response: visualize!
-					self.$el.find(".oncosign-view").html(response);
+					self.$el.find(".oncosign-view").html('<pre>' +
+						JSON.stringify(response, null, 4) + '</pre>');
 				},
 				// error callback
 		        function(err) {

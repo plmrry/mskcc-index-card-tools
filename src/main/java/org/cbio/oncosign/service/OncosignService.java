@@ -52,6 +52,15 @@ public class OncosignService
 	private RConnection conn = null;
 	protected boolean reloadData = true;
 
+	/**
+	 * Copies the contents of the given (uploaded) file into the specified
+	 * directory (this.outputDirResource).
+	 *
+	 * @param is        input stream for the uploaded file
+	 * @param fieldName name of the file to be created
+	 * @throws IOException
+	 * @throws InvalidFileNameException
+	 */
 	public void copyFileContent(InputStream is, String fieldName) throws IOException, InvalidFileNameException
 	{
 		if (!IOUtil.isValidFilename(fieldName))
@@ -117,22 +126,74 @@ public class OncosignService
 		return this.conn;
 	}
 
+	/**
+	 * Executes the oncosign.sea() function for the current settings.
+	 *
+	 * @return oncosign function return value as a JSON string
+	 * @throws REXPMismatchException
+	 * @throws RserveException
+	 * @throws IOException
+	 */
 	public String executeSea() throws REXPMismatchException, RserveException, IOException
 	{
 		RConnection c = this.getRConn();
 		String props = this.getPropsResource().getFile().getAbsolutePath();
 
-		RList rList = c.eval("oncosign.sea('"+ props +"');").asList();
+		REXP rExp = c.eval("oncosign.sea('" + props + "');");
 
-		Map<String, REXP> map = new HashMap<>();
+		Object obj = extractRExp(rExp);
 
-		// TODO need to properly convert to JSON!
-		for (String key: rList.keys())
+		// serialize the java object into a JSON
+		JSONSerializer jsonSerializer = new JSONSerializer().exclude("*.class");
+		return jsonSerializer.deepSerialize(obj);
+	}
+
+	/**
+	 * Extracts the contents of given REXP object as a plain java object.
+	 *
+	 * @param rExp  raw REXP result from RServe
+	 * @return      plain java object
+	 * @throws REXPMismatchException
+	 */
+	public Object extractRExp(REXP rExp) throws REXPMismatchException
+	{
+		Object value;
+
+		// do a recursive call for lists
+		if (rExp.isList())
 		{
-			map.put(key, rList.at(key));
+			RList rList = rExp.asList();
+			Map<String, Object> map = new HashMap<>();
+
+			for (String key: rList.keys())
+			{
+				map.put(key, extractRExp(rList.at(key)));
+			}
+
+			value = map;
+		}
+		// rest is straight forward...
+		else if (rExp.isVector())
+		{
+			value = rExp.asNativeJavaObject();
+		}
+		else if (rExp.isFactor())
+		{
+			value = rExp.asFactor();
+		}
+		else if (rExp.isInteger())
+		{
+			value = rExp.asInteger();
+		}
+		else if (rExp.isString())
+		{
+			value = rExp.asString();
+		}
+		else
+		{
+			value = rExp.asNativeJavaObject();
 		}
 
-		JSONSerializer jsonSerializer = new JSONSerializer().exclude("*.class");
-		return jsonSerializer.deepSerialize(map);
+		return value;
 	}
 }
