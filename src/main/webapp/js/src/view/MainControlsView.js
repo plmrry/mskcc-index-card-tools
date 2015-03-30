@@ -77,8 +77,10 @@ var MainControlsView = Backbone.View.extend({
 		        }
 			);
 
-			// TODO display loader message before actually loading the data
+			// display loader message before actually loading the data
 			// it will be replaced by the corresponding view once data is fetched
+			self.$el.find(".oncosign-view").html(_.template(
+				$("#loader_template").html(), {}));
 		});
 	}
 });
