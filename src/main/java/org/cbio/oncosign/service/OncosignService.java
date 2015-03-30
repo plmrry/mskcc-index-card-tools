@@ -1,18 +1,13 @@
 package org.cbio.oncosign.service;
 
-import flexjson.JSONSerializer;
 import org.apache.commons.fileupload.InvalidFileNameException;
 import org.cbio.oncosign.util.IOUtil;
-import org.rosuda.REngine.REXP;
 import org.rosuda.REngine.REXPMismatchException;
-import org.rosuda.REngine.RList;
 import org.rosuda.REngine.Rserve.RConnection;
 import org.rosuda.REngine.Rserve.RserveException;
 import org.springframework.core.io.Resource;
 
 import java.io.*;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Service to retrieve result for user uploaded data as a graph.
@@ -107,6 +102,7 @@ public class OncosignService
 			// load required libraries
 			c.voidEval("library(qvalue);");
 			c.voidEval("library(oncosign);");
+			c.voidEval("library(jsonlite);");
 
 			// TODO load required source files if required
 			//String functions = this.getrFunctionResource().getFile().getAbsolutePath();
@@ -139,61 +135,10 @@ public class OncosignService
 		RConnection c = this.getRConn();
 		String props = this.getPropsResource().getFile().getAbsolutePath();
 
-		REXP rExp = c.eval("oncosign.sea('" + props + "');");
+		// generate results on R by calling the sea function
+		c.voidEval("oncosignResult <- oncosign.sea('" + props + "');");
 
-		Object obj = extractRExp(rExp);
-
-		// serialize the java object into a JSON
-		JSONSerializer jsonSerializer = new JSONSerializer().exclude("*.class");
-		return jsonSerializer.deepSerialize(obj);
-	}
-
-	/**
-	 * Extracts the contents of given REXP object as a plain java object.
-	 *
-	 * @param rExp  raw REXP result from RServe
-	 * @return      plain java object
-	 * @throws REXPMismatchException
-	 */
-	public Object extractRExp(REXP rExp) throws REXPMismatchException
-	{
-		Object value;
-
-		// do a recursive call for lists
-		if (rExp.isList())
-		{
-			RList rList = rExp.asList();
-			Map<String, Object> map = new HashMap<>();
-
-			for (String key: rList.keys())
-			{
-				map.put(key, extractRExp(rList.at(key)));
-			}
-
-			value = map;
-		}
-		// rest is straight forward...
-		else if (rExp.isVector())
-		{
-			value = rExp.asNativeJavaObject();
-		}
-		else if (rExp.isFactor())
-		{
-			value = rExp.asFactor();
-		}
-		else if (rExp.isInteger())
-		{
-			value = rExp.asInteger();
-		}
-		else if (rExp.isString())
-		{
-			value = rExp.asString();
-		}
-		else
-		{
-			value = rExp.asNativeJavaObject();
-		}
-
-		return value;
+		// serialize the resulting R object and return the JSON string
+		return c.eval("serializeJSON(oncosignResult, digits = 8, pretty = FALSE);").asString();
 	}
 }
