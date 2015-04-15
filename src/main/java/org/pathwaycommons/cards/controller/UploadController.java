@@ -1,10 +1,10 @@
-package org.cbio.oncosign.controller;
+package org.pathwaycommons.cards.controller;
 
 import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.fileupload.FileUploadException;
 import org.apache.commons.fileupload.disk.DiskFileItemFactory;
 import org.apache.commons.fileupload.servlet.ServletFileUpload;
-import org.cbio.oncosign.service.OncosignService;
+import org.pathwaycommons.cards.service.OncosignService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;

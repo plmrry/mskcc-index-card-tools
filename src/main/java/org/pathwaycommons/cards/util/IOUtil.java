@@ -1,4 +1,4 @@
-package org.cbio.oncosign.util;
+package org.pathwaycommons.cards.util;
 
 public class IOUtil
 {

@@ -89,7 +89,7 @@
 					<span class="icon-bar"></span>
 					<span class="icon-bar"></span>
 				</button-->
-				<a href="#" class="navbar-brand">OncoSign</a>
+				<a href="#" class="navbar-brand">PathwayCards</a>
 			</div>
 			<div class="navbar-inner">
 				<ul class="nav navbar-nav">

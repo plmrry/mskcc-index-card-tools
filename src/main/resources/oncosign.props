@@ -1,6 +1,0 @@
-# properties file for oncosign R executable
-
-case_file=/tmp/sample_list_file.txt
-genomic_alteration_file=/tmp/data_matrix_file.txt
-max_levels=3
-min_fraction_of_alterations=0.01

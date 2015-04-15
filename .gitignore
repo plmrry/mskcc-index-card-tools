@@ -1,4 +1,4 @@
 .idea/*
 *.iml
-oncosign.properties
+pathwaycards.properties
 target/*

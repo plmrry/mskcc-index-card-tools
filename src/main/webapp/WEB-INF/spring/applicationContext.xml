@@ -10,19 +10,11 @@
                         http://www.springframework.org/schema/cache
                         http://www.springframework.org/schema/cache/spring-cache.xsd">
 
-    <context:property-placeholder location="classpath*:spring/oncosign.properties" />
+    <context:property-placeholder location="classpath*:spring/pathwaycards.properties" />
 
-	<bean class="org.cbio.oncosign.service.OncosignService" id="oncosignService">
+	<!--bean class="org.cbio.oncosign.service.OncosignService" id="oncosignService">
 		<property name="outputDirResource" value="${outputDir.location}"/>
 		<property name="propsResource" value="${oncosign.props}"/>
-	</bean>
-
-	<!--bean class="org.cbio.peralyzer.service.MatrixDataService" id="matrixDataService">
-		<property name="matrixDataResource" value="${matrixData.location}"/>
 	</bean-->
-
-	<!--<bean class="org.cbio.graphviz.service.SampleValidationService" id="sampleValidationService">-->
-		<!--<property name="pancanDataResource" value="${pancanData.location}"/>-->
-	<!--</bean>-->
 
 </beans>
