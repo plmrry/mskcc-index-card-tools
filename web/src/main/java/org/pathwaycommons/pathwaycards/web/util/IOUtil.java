@@ -1,4 +1,4 @@
-package org.pathwaycommons.cards.util;
+package org.pathwaycommons.pathwaycards.web.util;
 
 public class IOUtil
 {
