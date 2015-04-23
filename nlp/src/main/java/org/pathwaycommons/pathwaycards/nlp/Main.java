@@ -19,6 +19,7 @@ public class Main
 		if (args.length < 3)
 		{
 			System.err.println("Invalid number of arguments");
+			return;
 		}
 
 		String inputDir = args[0];
@@ -29,13 +30,13 @@ public class Main
 		List<File> subList = files.subList(0, fileLimit);
 
 		NLPProcessor processor = new NLPProcessor();
-		//processor.process("John Smith went to China. He visited Beijing, on January 10th, 2013.");
+		//processor.printSummary(processor.process("MDM2 binds TP53."));
 
 		for (File article: subList)
 		{
 			List<String> lines = getLines(article, lineLimit);
 
-			String text = StringUtils.join(lines, ' ');
+			String text = StringUtils.join(lines, '\n');
 			System.out.println("[" + new Date() + "] Processing: " + article.getName());
 			Document doc = processor.process(text);
 			processor.printSummary(doc);

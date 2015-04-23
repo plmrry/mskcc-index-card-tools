@@ -1,5 +1,6 @@
 package org.pathwaycommons.pathwaycards.nlp;
 
+import edu.arizona.sista.processors.bionlp.BioNLPProcessor;
 import edu.arizona.sista.struct.DirectedGraphEdgeIterator;
 import edu.arizona.sista.processors.*;
 import edu.arizona.sista.processors.corenlp.CoreNLPProcessor;
@@ -8,7 +9,8 @@ import edu.arizona.sista.processors.fastnlp.FastNLPProcessor;
 public class NLPProcessor {
 	public Document process(String text) throws Exception {
 		// create the processor
-		Processor proc = new CoreNLPProcessor(true, false, false, 100);
+		//Processor proc = new CoreNLPProcessor(true, false, false, 100);
+		Processor proc = new BioNLPProcessor(true, true, false, 100, true);
 
 		// for much faster processing, use FastNLPProcessor
 		// Processor proc = new FastNLPProcessor(true, false);
