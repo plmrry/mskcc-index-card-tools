@@ -40,6 +40,8 @@ public class Main
 			System.out.println("[" + new Date() + "] Processing: " + article.getName());
 			Document doc = processor.process(text);
 			processor.printSummary(doc);
+			// TODO print out mentions?
+			processor.extractMentions(doc);
 		}
 	}
 
