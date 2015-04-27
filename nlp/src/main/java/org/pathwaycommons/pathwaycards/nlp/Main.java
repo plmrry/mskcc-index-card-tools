@@ -20,7 +20,7 @@ public class Main
 		// TODO improve parameter processing
 		if (args.length < 3)
 		{
-			System.err.println("Invalid number of arguments");
+			System.err.println("Invalid number of arguments.");
 			return;
 		}
 
@@ -29,7 +29,14 @@ public class Main
 		Integer lineLimit = Integer.parseInt(args[2]);
 
 		List<File> files = getFiles(inputDir);
-		List<File> subList = files.subList(0, fileLimit);
+
+		if (files.size() == 0)
+		{
+			System.err.println("Input directory is empty.");
+			return;
+		}
+
+		List<File> subList = files.subList(0, Math.min(fileLimit, files.size()));
 
 		NLPProcessor processor = new NLPProcessor();
 		//processor.printSummary(processor.process("MDM2 binds TP53."));
@@ -84,6 +91,11 @@ public class Main
 		if (inFile.isDirectory())
 		{
 			fileList = processDir(inFile);
+		}
+		else
+		{
+			fileList = new ArrayList<File>(1);
+			fileList.add(inFile);
 		}
 
 		return fileList;
