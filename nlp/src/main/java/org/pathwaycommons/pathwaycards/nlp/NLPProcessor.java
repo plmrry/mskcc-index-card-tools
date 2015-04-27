@@ -3,6 +3,7 @@ package org.pathwaycommons.pathwaycards.nlp;
 import edu.arizona.sista.odin.Actions;
 import edu.arizona.sista.odin.EventMention;
 import edu.arizona.sista.odin.Mention;
+import edu.arizona.sista.odin.domains.bigmechanism.dryrun2015.DARPAoutput;
 import edu.arizona.sista.odin.domains.bigmechanism.dryrun2015.DarpaActions;
 import edu.arizona.sista.odin.domains.bigmechanism.dryrun2015.Ruler;
 import edu.arizona.sista.odin.impl.Extractor;
@@ -11,7 +12,9 @@ import edu.arizona.sista.struct.DirectedGraphEdgeIterator;
 import edu.arizona.sista.processors.*;
 import edu.arizona.sista.processors.corenlp.CoreNLPProcessor;
 import edu.arizona.sista.processors.fastnlp.FastNLPProcessor;
+import scala.Function1;
 import scala.collection.Seq;
+import scala.collection.Iterator;
 
 public class NLPProcessor {
 	public Document process(String text) throws Exception {
@@ -37,6 +40,18 @@ public class NLPProcessor {
 		Ruler extractor = new Ruler(rules, actions);
 
 		return extractor.extractFrom(doc);
+	}
+
+	public void printMentions(Document doc)
+	{
+		String entityRules = Ruler.readEntityRules(true);
+		String eventRules = Ruler.readEventRules(true);
+
+		String rules = entityRules + "\n\n" + eventRules;
+		Actions actions = new DarpaActions();
+		Ruler extractor = new Ruler(rules, actions);
+
+		MentionExtractor.printMentions(extractor, doc, System.out);
 	}
 
 	public void printSummary(Document doc)

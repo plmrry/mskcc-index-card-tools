@@ -1,7 +1,9 @@
 package org.pathwaycommons.pathwaycards.nlp;
 
+import edu.arizona.sista.odin.Mention;
 import edu.arizona.sista.processors.Document;
 import org.apache.commons.lang3.StringUtils;
+import scala.collection.Seq;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -40,8 +42,8 @@ public class Main
 			System.out.println("[" + new Date() + "] Processing: " + article.getName());
 			Document doc = processor.process(text);
 			processor.printSummary(doc);
-			// TODO print out mentions?
-			processor.extractMentions(doc);
+			//Seq<Mention> mentions = processor.extractMentions(doc);
+			processor.printMentions(doc);
 		}
 	}
 
