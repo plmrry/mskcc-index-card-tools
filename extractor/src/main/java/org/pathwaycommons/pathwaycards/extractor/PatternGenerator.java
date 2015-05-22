@@ -90,6 +90,21 @@ public class PatternGenerator
 		return p;
 	}
 
+	//--- Expression patterns
+
+	public static Pattern expressionPattern()
+	{
+		Pattern p = new Pattern(PhysicalEntity.class, "TF PE");
+		p.add(peToControl(), "TF PE", "Control");
+		p.add(controlToTempReac(), "Control", "TempReac");
+		p.add(product(), "TempReac", "product PE");
+		p.add(linkToSpecific(), "product PE", "product SPE");
+		p.add(new Type(SequenceEntity.class), "product SPE");
+		p.add(peToER(), "product SPE", "product generic ER");
+		p.add(linkedER(false), "product generic ER", "product ER");
+		return p;
+	}
+
 	//--- GTP exchange patterns
 
 	public static Pattern controlsSmallMolExchangePattern(String oldMol, String newMol)

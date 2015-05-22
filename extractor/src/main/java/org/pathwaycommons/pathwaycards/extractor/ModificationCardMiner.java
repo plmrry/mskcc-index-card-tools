@@ -33,7 +33,8 @@ public class ModificationCardMiner
 	 * Miners used for generating cards.
 	 */
 	private AbstractMiner[] miners = new AbstractMiner[]{
-		new CSCO(), new CSCO_ButPart(), new CSCO_ThrContSmMol(), new BindingMiner()};
+		new CSCO(), new CSCO_ButPart(), new CSCO_ThrContSmMol(), new BindingMiner(),
+		new ExpressionMiner()};
 
 	public static void main(String[] args) throws IOException
 	{
@@ -199,6 +200,15 @@ public class ModificationCardMiner
 			return map;
 		}
 
+		protected Map prepareExpressionCard(PhysicalEntity source, EntityReference target,
+			String type, List<BioPAXElement> mediators)
+		{
+			Map map = new LinkedHashMap();
+			fillBasic(source, target, type, mediators, map);
+			addEvidence(mediators, map);
+			return map;
+		}
+
 		private void addEvidence(List<BioPAXElement> mediators, Map map)
 		{
 			ArrayList evList = new ArrayList();
@@ -360,6 +370,44 @@ public class ModificationCardMiner
 					cards.add(card);
 				}
 			}
+		}
+
+		@Override
+		public String[] getMediatorLabels()
+		{
+			return new String[]{"Conversion"};
+		}
+	}
+
+	class ExpressionMiner extends AbstractMiner
+	{
+		@Override
+		public Pattern constructPattern()
+		{
+			return PatternGenerator.expressionPattern();
+		}
+
+		@Override
+		public void writeResult(Map<BioPAXElement, List<Match>> matches, OutputStream out) throws IOException
+		{
+			for (List<Match> matchList : matches.values())
+			{
+				for (Match match : matchList)
+				{
+					PhysicalEntity source = (PhysicalEntity) match.get("TF PE", getPattern());
+					EntityReference target = (EntityReference) match.get("product ER", getPattern());
+					List<BioPAXElement> meds = match.get(getMediatorLabels(), getPattern());
+					int sign = sign(match, getControlLabels());
+					Map card = prepareExpressionCard(source, target, (sign < 0 ? "de" : "in") + "creases", meds);
+					cards.add(card);
+				}
+			}
+		}
+
+		@Override
+		public String[] getMediatorLabels()
+		{
+			return new String[]{"TempReac"};
 		}
 	}
 
