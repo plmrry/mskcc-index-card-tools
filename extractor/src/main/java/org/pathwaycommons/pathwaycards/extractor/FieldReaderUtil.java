@@ -84,19 +84,22 @@ public class FieldReaderUtil
 			{
 				ModificationFeature mf = (ModificationFeature) ef;
 				SequenceModificationVocabulary type = mf.getModificationType();
-				Set<String> terms = type.getTerm();
-				if (!terms.isEmpty())
+				if (type != null)
 				{
-					String term = terms.iterator().next();
-					term = mapModificationTerm(term);
+					Set<String> terms = type.getTerm();
+					if (!terms.isEmpty())
+					{
+						String term = terms.iterator().next();
+						term = mapModificationTerm(term);
 
-					SequenceLocation loc = mf.getFeatureLocation();
-					String locStr = toString(loc);
-					Map map = new LinkedHashMap();
-					list.add(map);
-					map.put("feature_type", "modification");
-					map.put("modification_type", term);
-					if (locStr != null) map.put("position", locStr);
+						SequenceLocation loc = mf.getFeatureLocation();
+						String locStr = toString(loc);
+						Map map = new LinkedHashMap();
+						list.add(map);
+						map.put("feature_type", "modification");
+						map.put("modification_type", term);
+						if (locStr != null) map.put("position", locStr);
+					}
 				}
 			}
 			else if (ef instanceof BindingFeature)
@@ -135,7 +138,9 @@ public class FieldReaderUtil
 	 */
 	public static String getPubChemID(XReferrable xrable)
 	{
-		return getXrefID(xrable, "pubchem");
+		String id = getXrefID(xrable, "pubchem-compound");
+		if (id != null) id = "PubChem:" + id;
+		return id;
 	}
 
 	/**
@@ -189,29 +194,13 @@ public class FieldReaderUtil
 			String s = getUniProtName((Named) pe);
 			if (s != null) return s;
 		}
-		else if (pe instanceof SmallMolecule)
+		else if (pe instanceof SmallMolecule || pe instanceof SmallMoleculeReference)
 		{
 			String s = getPubChemID((XReferrable) pe);
 			if (s != null) return s;
 		}
 
 		return getHGNCSymbol((XReferrable) pe);
-	}
-
-	public static boolean isGeneric(PhysicalEntity pe)
-	{
-		if (!pe.getMemberPhysicalEntityOf().isEmpty()) return true;
-
-		String sym = getHGNCSymbol(pe);
-
-		if (sym != null) return false;
-
-		if (pe instanceof SimplePhysicalEntity)
-		{
-			EntityReference er = ((SimplePhysicalEntity) pe).getEntityReference();
-			if (er != null && !er.getEntityReferenceOf().isEmpty()) return true;
-		}
-		return false;
 	}
 
 	public static String pickAName(Named named)
@@ -267,7 +256,7 @@ public class FieldReaderUtil
 
 		// Write simple molecules
 		Map map = new LinkedHashMap();
-		String upn = getUniProtName(pe);
+		String upn = pe instanceof Protein ? getUniProtName(pe) : pe instanceof SmallMolecule ? getPubChemID(pe) : null;
 		String sym = getHGNCSymbol(pe);
 		String name = pickAName(pe);
 
@@ -283,6 +272,41 @@ public class FieldReaderUtil
 
 		if (!featList.isEmpty()) map.put("features", featList);
 		if (!negFeatList.isEmpty()) map.put("not_features", negFeatList);
+
+		return map;
+	}
+
+	public static Object convertToJASON(EntityReference er)
+	{
+		// Write generics
+		if (!er.getMemberEntityReference().isEmpty())
+		{
+			Map map = new LinkedHashMap();
+			map.put("entity_type", "protein_family");
+			map.put("entity_text", pickAName(er));
+			List list = new ArrayList();
+			map.put("family_members", list);
+
+			for (EntityReference mem : er.getMemberEntityReference())
+			{
+				list.add(convertToJASON(mem));
+			}
+
+			return map;
+		}
+
+		// Write simple molecules
+		Map map = new LinkedHashMap();
+		String upn = getUniProtName(er);
+		String sym = getHGNCSymbol(er);
+		String name = pickAName(er);
+
+		String type = er instanceof ProteinReference ? "protein" : er instanceof SmallMoleculeReference ? "chemical" :
+			er instanceof RnaReference ? "RNA" : er instanceof DnaReference ? "DNA" : "Unclassified";
+
+		map.put("entity_type", type);
+		map.put("entity_text", name);
+		if (upn != null || sym != null) map.put("identifier", upn != null ? upn : sym);
 
 		return map;
 	}

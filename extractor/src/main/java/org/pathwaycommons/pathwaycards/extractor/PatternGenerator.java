@@ -54,7 +54,7 @@ public class PatternGenerator
 		Pattern p = new Pattern(PhysicalEntity.class, "upper controller PE");
 		p.add(peToControl(), "upper controller PE", "upper Control");
 		p.add(controlToConv(), "upper Control", "upper Conversion");
-		p.add(new NOT(participantER()), "upper Conversion", "upper controller ER");
+		p.add(new NOT(participant()), "upper Conversion", "upper controller PE");
 		p.add(new Participant(RelType.OUTPUT, blacklist), "upper Conversion", "controller PE");
 		p.add(type(SmallMolecule.class), "controller PE");
 		if (blacklist != null) p.add(new NonUbique(blacklist), "controller PE");
@@ -71,11 +71,39 @@ public class PatternGenerator
 		PatternBox.stateChange(p, "Control");
 
 		p.add(type(SequenceEntityReference.class), "changed ER");
-		p.add(equal(false), "upper controller ER", "changed ER");
 
 		return p;
 	}
 
+	//--- Binding patterns
+
+	public static Pattern bindingPattern()
+	{
+		Pattern p = new Pattern(PhysicalEntity.class, "PE1");
+		p.add(participatesInConv(), "PE1", "Conversion");
+		p.add(new ConversionSide(ConversionSide.Type.SAME_SIDE), "PE1", "Conversion", "PE2");
+		p.add(new HasSmallerID(), "PE1", "PE2");
+		p.add(new ConversionSide(ConversionSide.Type.OTHER_SIDE), "PE1", "Conversion", "Complex");
+		p.add(type(Complex.class), "Complex");
+		p.add(complexMembers(), "Complex", "PE1");
+		p.add(complexMembers(), "Complex", "PE2");
+		return p;
+	}
+
+	//--- Expression patterns
+
+	public static Pattern expressionPattern()
+	{
+		Pattern p = new Pattern(PhysicalEntity.class, "TF PE");
+		p.add(peToControl(), "TF PE", "Control");
+		p.add(controlToTempReac(), "Control", "TempReac");
+		p.add(product(), "TempReac", "product PE");
+		p.add(linkToSpecific(), "product PE", "product SPE");
+		p.add(new Type(SequenceEntity.class), "product SPE");
+		p.add(peToER(), "product SPE", "product generic ER");
+		p.add(linkedER(false), "product generic ER", "product ER");
+		return p;
+	}
 
 	//--- GTP exchange patterns
 

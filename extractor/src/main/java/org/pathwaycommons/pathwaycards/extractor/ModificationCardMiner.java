@@ -1,12 +1,14 @@
 package org.pathwaycommons.pathwaycards.extractor;
 
+import com.github.jsonldjava.utils.JsonUtils;
 import org.biopax.paxtools.io.SimpleIOHandler;
 import org.biopax.paxtools.model.BioPAXElement;
 import org.biopax.paxtools.model.Model;
-import org.biopax.paxtools.model.level3.ModificationFeature;
+import org.biopax.paxtools.model.level3.EntityReference;
+import org.biopax.paxtools.model.level3.Interaction;
+import org.biopax.paxtools.model.level3.PhysicalEntity;
 import org.biopax.paxtools.pattern.Match;
 import org.biopax.paxtools.pattern.Pattern;
-import org.biopax.paxtools.pattern.PatternBox;
 import org.biopax.paxtools.pattern.Searcher;
 import org.biopax.paxtools.pattern.miner.AbstractSIFMiner;
 import org.biopax.paxtools.pattern.miner.SIFEnum;
@@ -22,12 +24,20 @@ import java.util.zip.GZIPInputStream;
  */
 public class ModificationCardMiner
 {
+	/**
+	 * JSON cards
+	 */
+	List cards = new ArrayList();
+
+	/**
+	 * Miners used for generating cards.
+	 */
 	private AbstractMiner[] miners = new AbstractMiner[]{
-		new CSCO(), new CSCO_ButPart(), new CSCO_ThrContSmMol()};
+		new CSCO(), new CSCO_ButPart(), new CSCO_ThrContSmMol(), new BindingMiner(),
+		new ExpressionMiner()};
 
 	public static void main(String[] args) throws IOException
 	{
-		// A blacklist file is available at http://www.pathwaycommons.org/pc2/downloads/blacklist.txt
 		// This is for avoiding ubiquitous small molecules like ATP
 		Blacklist black = new Blacklist(new URL(
 			"http://www.pathwaycommons.org/pc2/downloads/blacklist.txt").openStream());
@@ -37,14 +47,13 @@ public class ModificationCardMiner
 
 		SimpleIOHandler io = new SimpleIOHandler();
 
-		// The large model file is available at
-		// http://www.pathwaycommons.org/pc2/downloads/Pathway%20Commons.5.Detailed_Process_Data.BIOPAX.owl.gz
 		Model model = io.convertFromOWL(new GZIPInputStream(new URL(
 			"http://www.pathwaycommons.org/pc2/downloads/Pathway%20Commons.7.Reactome.BIOPAX.owl.gz").
 			openStream()));
+//		Model model = io.convertFromOWL(new FileInputStream("C:\\Temp\\temp.owl"));
 
 		mcm.mineAndCollect(model);
-		mcm.writeResults("DeltaFeatures.txt");
+		mcm.writeResults("C:\\Temp\\cards.json");
 	}
 
 	abstract class AbstractMiner extends AbstractSIFMiner
@@ -64,11 +73,8 @@ public class ModificationCardMiner
 			{
 				for (Match m : matchList)
 				{
-					// find source and target identifiers
-					Set<String> s1 = getIdentifiers(m, getSourceLabel());
-					Set<String> s2 = getIdentifiers(m, getTargetLabel());
-
-					if (s1.isEmpty() || s2.isEmpty()) continue;
+					PhysicalEntity source = (PhysicalEntity) m.get(getSourceLabel(), getPattern());
+					EntityReference target = (EntityReference) m.get(getTargetLabel(), getPattern());
 
 					// collect gained and lost modifications and cellular locations of the target
 
@@ -82,69 +88,162 @@ public class ModificationCardMiner
 
 					// correct for inactive-labelled controllers and negative sign controls
 					int sign = sign(m, getControlLabels());
-					if (labeledInactive(m, getSourceSimplePELabel(), getSourceComplexPELabel()))
-						sign *= -1;
 
 					Set<String> modif0 = modif[sign == -1 ? 1 : 0];
 					Set<String> modif1 = modif[sign == -1 ? 0 : 1];
 					Set<String> comps0 = comps[sign == -1 ? 1 : 0];
 					Set<String> comps1 = comps[sign == -1 ? 0 : 1];
 
-					for (String s1s : s1)
+					List<BioPAXElement> meds = m.get(getMediatorLabels(), getPattern());
+
+					int actChSign = getActivityChangeSign(modif0, modif1);
+					if (actChSign != 0)
 					{
-						for (String s2s : s2)
-						{
-							if (!modif0.isEmpty()) collect(s1s, s2s, modif0, gainMods);
-							if (!modif1.isEmpty()) collect(s1s, s2s, modif1, lossMods);
-							if (!comps0.isEmpty()) collect(s1s, s2s, comps0, gainComps);
-							if (!comps1.isEmpty()) collect(s1s, s2s, comps1, lossComps);
+						prepareActivityChangeCard(source, target,
+							(actChSign == 1 ? "inc" : "dec") + "reases_activity", meds);
+					}
 
-							if (!modif[0].isEmpty() || !modif[1].isEmpty() ||
-								!comps[0].isEmpty() || !comps[1].isEmpty())
-							{
-								// record mediator ids to map these interactions to detailed data
+					if (!modif0.isEmpty())
+					{
+						cards.add(prepareModificationCard(source, target, "adds_modification", modif0, meds));
+					}
+					if (!modif1.isEmpty())
+					{
+						cards.add(prepareModificationCard(source, target, "removes_modification", modif1, meds));
+					}
 
-								if (!mediators.containsKey(s1s)) mediators.put(s1s, new HashMap<String, Set<String>>());
-								if (!mediators.get(s1s).containsKey(s2s)) mediators.get(s1s).put(s2s, new HashSet<String>());
-
-								List<BioPAXElement> meds = m.get(getMediatorLabels(), getPattern());
-								for (BioPAXElement med : meds)
-								{
-									mediators.get(s1s).get(s2s).add(med.getRDFId());
-								}
-
-								// record modifications and cellular locations of the source molecule
-
-								Set<String> mods = getModifications(m, getSourceSimplePELabel(), getSourceComplexPELabel());
-								Set<String> locs = getCellularLocations(m, getSourceSimplePELabel(), getSourceComplexPELabel());
-
-								collect(s1s, s2s, mods, sourceMods);
-								collect(s1s, s2s, locs, sourceComps);
-							}
-						}
+					if (!comps0.isEmpty() || !comps1.isEmpty())
+					{
+						cards.add(prepareTranslocationCard(source, target, "translocation", comps1, comps0, meds));
 					}
 				}
 			}
-
 		}
 
-		private void collect(String s1, String s2, Set<String> modificationFeatures,
-			Map<String, Map<String, Set<String>>> map)
+		private int getActivityChangeSign(Set<String> mods0, Set<String> mods1)
 		{
-			if (!map.containsKey(s1)) map.put(s1, new HashMap<String, Set<String>>());
-			if (!map.get(s1).containsKey(s2)) map.get(s1).put(s2, new HashSet<String>());
-			map.get(s1).get(s2).addAll(modificationFeatures);
+			boolean act0 = mods0.remove("residue modification, active");
+			boolean act1 = mods1.remove("residue modification, active");
+			boolean inh0 = mods0.remove("residue modification, inactive");
+			boolean inh1 = mods1.remove("residue modification, inactive");
+
+			if (act0 && !act1) return 1;
+			if (act1 && !act0) return -1;
+			if (inh0 && !inh1) return -1;
+			if (inh1 && !inh0) return 1;
+			return 0;
 		}
 
-
-		String getSourceSimplePELabel()
+		private Map prepareModificationCard(PhysicalEntity source, EntityReference target, String type,
+			Set<String> mods, List<BioPAXElement> mediators)
 		{
-			return "controller simple PE";
+			Map map = new LinkedHashMap();
+			Map extractedInfo = fillBasic(source, target, type, mediators, map);
+			List modList = new ArrayList();
+			extractedInfo.put("modifications", modList);
+			for (String mod : mods)
+			{
+				String site = null;
+				if (mod.contains("@"))
+				{
+					site = mod.substring(mod.indexOf("@") + 1);
+					mod = mod.substring(0, mod.indexOf("@"));
+				}
+				mod = FieldReaderUtil.mapModificationTerm(mod);
+				Map modMap = new LinkedHashMap();
+				modList.add(modMap);
+				modMap.put("modification_type", mod);
+				if (site != null) modMap.put("position", site);
+			}
+
+			addEvidence(mediators, map);
+
+			return map;
 		}
 
-		String getSourceComplexPELabel()
+		private Map prepareTranslocationCard(PhysicalEntity source, EntityReference target, String type,
+			Set<String> from, Set<String> to, List<BioPAXElement> mediators)
 		{
-			return "controller PE";
+			Map map = new LinkedHashMap();
+			fillBasic(source, target, type, mediators, map);
+
+			if (!from.isEmpty())
+			{
+				if (from.size() == 1) map.put("from_location", from.iterator().next());
+				else map.put("from_location", new ArrayList(from));
+			}
+			if (!to.isEmpty())
+			{
+				if (to.size() == 1) map.put("to_location", to.iterator().next());
+				else map.put("to_location", new ArrayList(to));
+			}
+
+			addEvidence(mediators, map);
+			return map;
+		}
+
+		private Map prepareActivityChangeCard(PhysicalEntity source, EntityReference target, String type,
+			List<BioPAXElement> mediators)
+		{
+			Map map = new LinkedHashMap();
+			fillBasic(source, target, type, mediators, map);
+			addEvidence(mediators, map);
+			return map;
+		}
+
+		protected Map prepareBindingCard(PhysicalEntity pe1, PhysicalEntity pe2,
+			List<BioPAXElement> mediators)
+		{
+			Map map = new LinkedHashMap();
+			fillBasic(pe1, pe2, "binds", mediators, map);
+			addEvidence(mediators, map);
+			return map;
+		}
+
+		protected Map prepareExpressionCard(PhysicalEntity source, EntityReference target,
+			String type, List<BioPAXElement> mediators)
+		{
+			Map map = new LinkedHashMap();
+			fillBasic(source, target, type, mediators, map);
+			addEvidence(mediators, map);
+			return map;
+		}
+
+		private void addEvidence(List<BioPAXElement> mediators, Map map)
+		{
+			ArrayList evList = new ArrayList();
+			map.put("evidence", evList);
+			for (BioPAXElement mediator : mediators)
+			{
+				if (mediator instanceof Interaction)
+				{
+					for (String comment : ((Interaction) mediator).getComment())
+					{
+						if (comment.startsWith("REPLACED")) continue;
+						if (comment.contains("@Layout@")) continue;
+						evList.add(comment);
+					}
+				}
+			}
+		}
+
+		private Map fillBasic(PhysicalEntity source, BioPAXElement target, String type, List<BioPAXElement> mediators, Map map)
+		{
+			List eles = new ArrayList();
+			map.put("model_elements", eles);
+			for (BioPAXElement mediator : mediators)
+			{
+				eles.add(mediator.getRDFId());
+			}
+			Map extractedInfo = new LinkedHashMap();
+			map.put("extracted_information", extractedInfo);
+			extractedInfo.put("participant_a", FieldReaderUtil.convertToJASON(source));
+			if (target instanceof PhysicalEntity)
+				extractedInfo.put("participant_b", FieldReaderUtil.convertToJASON((PhysicalEntity) target));
+			else
+				extractedInfo.put("participant_b", FieldReaderUtil.convertToJASON((EntityReference) target));
+			extractedInfo.put("interaction_type", type);
+			return extractedInfo;
 		}
 
 		String getInputSimplePELabel()
@@ -170,7 +269,7 @@ public class ModificationCardMiner
 		@Override
 		public String getSourceLabel()
 		{
-			return "controller ER";
+			return "controller PE";
 		}
 
 		@Override
@@ -188,17 +287,6 @@ public class ModificationCardMiner
 		public String[] getControlLabels()
 		{
 			return new String[]{"Control"};
-		}
-
-		protected String toString(ModificationFeature mf)
-		{
-			String term = getModificationTerm(mf);
-			if (term != null)
-			{
-				String loc = getPositionInString(mf);
-				return term + loc;
-			}
-			return null;
 		}
 	}
 
@@ -241,21 +329,9 @@ public class ModificationCardMiner
 		}
 
 		@Override
-		String getSourceSimplePELabel()
-		{
-			return "upper controller simple PE";
-		}
-
-		@Override
-		String getSourceComplexPELabel()
-		{
-			return "upper controller PE";
-		}
-
-		@Override
 		public String getSourceLabel()
 		{
-			return "upper controller ER";
+			return "upper controller PE";
 		}
 
 		@Override
@@ -268,6 +344,70 @@ public class ModificationCardMiner
 		public String[] getControlLabels()
 		{
 			return new String[]{"upper Control", "Control"};
+		}
+	}
+
+	class BindingMiner extends AbstractMiner
+	{
+		@Override
+		public Pattern constructPattern()
+		{
+			return PatternGenerator.bindingPattern();
+		}
+
+		@Override
+		public void writeResult(Map<BioPAXElement, List<Match>> matches, OutputStream out) throws IOException
+		{
+			for (List<Match> matchList : matches.values())
+			{
+				for (Match match : matchList)
+				{
+					PhysicalEntity pe1 = (PhysicalEntity) match.get("PE1", getPattern());
+					PhysicalEntity pe2 = (PhysicalEntity) match.get("PE2", getPattern());
+					List<BioPAXElement> meds = match.get(getMediatorLabels(), getPattern());
+
+					Map card = prepareBindingCard(pe1, pe2, meds);
+					cards.add(card);
+				}
+			}
+		}
+
+		@Override
+		public String[] getMediatorLabels()
+		{
+			return new String[]{"Conversion"};
+		}
+	}
+
+	class ExpressionMiner extends AbstractMiner
+	{
+		@Override
+		public Pattern constructPattern()
+		{
+			return PatternGenerator.expressionPattern();
+		}
+
+		@Override
+		public void writeResult(Map<BioPAXElement, List<Match>> matches, OutputStream out) throws IOException
+		{
+			for (List<Match> matchList : matches.values())
+			{
+				for (Match match : matchList)
+				{
+					PhysicalEntity source = (PhysicalEntity) match.get("TF PE", getPattern());
+					EntityReference target = (EntityReference) match.get("product ER", getPattern());
+					List<BioPAXElement> meds = match.get(getMediatorLabels(), getPattern());
+					int sign = sign(match, getControlLabels());
+					Map card = prepareExpressionCard(source, target, (sign < 0 ? "de" : "in") + "creases", meds);
+					cards.add(card);
+				}
+			}
+		}
+
+		@Override
+		public String[] getMediatorLabels()
+		{
+			return new String[]{"TempReac"};
 		}
 	}
 
@@ -293,52 +433,7 @@ public class ModificationCardMiner
 	public void writeResults(String filename) throws IOException
 	{
 		BufferedWriter writer = new BufferedWriter(new FileWriter(filename));
-		writer.write("Source\tType\tTarget\tSource-modifs\tSource-locs\tGained-modifs\tLost-modifs\tGained-locs\tLost-locs\tMediators");
-
-		Set<String> s1s = new HashSet<String>(gainMods.keySet());
-		s1s.addAll(lossMods.keySet());
-
-		for (String s1 : s1s)
-		{
-			Set<String> s2s = new HashSet<String>();
-			if (gainMods.containsKey(s1)) s2s.addAll(gainMods.get(s1).keySet());
-			if (lossMods.containsKey(s1)) s2s.addAll(lossMods.get(s1).keySet());
-
-			for (String s2 : s2s)
-			{
-				writer.write("\n" + s1 + "\t" + SIFEnum.CONTROLS_STATE_CHANGE_OF.getTag() +
-					"\t" + s2);
-
-				writeVal(writer, s1, s2, sourceMods);
-				writeVal(writer, s1, s2, sourceComps);
-				writeVal(writer, s1, s2, gainMods);
-				writeVal(writer, s1, s2, lossMods);
-				writeVal(writer, s1, s2, gainComps);
-				writeVal(writer, s1, s2, lossComps);
-				writer.write("\t" + toString(mediators.get(s1).get(s2)));
-			}
-		}
-
+		JsonUtils.writePrettyPrint(writer, cards);
 		writer.close();
-	}
-
-	private void writeVal(BufferedWriter writer, String s1, String s2,
-		Map<String, Map<String, Set<String>>> map) throws IOException
-	{
-		writer.write("\t");
-		if (map.containsKey(s1) && map.get(s1).containsKey(s2))
-		{
-			writer.write(map.get(s1).get(s2).toString());
-		}
-	}
-
-	private String toString(Set<String> set)
-	{
-		String s = "";
-		for (String s1 : set)
-		{
-			s += " " + s1;
-		}
-		return s.substring(1);
 	}
 }
