@@ -24,5 +24,6 @@
 	<modules>
 		<module>web</module>
 		<module>nlp</module>
+		<module>extractor</module>
 	</modules>
 </project>
