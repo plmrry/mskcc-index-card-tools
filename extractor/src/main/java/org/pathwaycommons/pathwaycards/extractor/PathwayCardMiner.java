@@ -22,7 +22,7 @@ import java.util.zip.GZIPInputStream;
 /**
  * @author Ozgun Babur
  */
-public class ModificationCardMiner
+public class PathwayCardMiner
 {
 	/**
 	 * JSON cards
@@ -43,7 +43,7 @@ public class ModificationCardMiner
 		Blacklist black = new Blacklist(new URL(
 			"http://www.pathwaycommons.org/pc2/downloads/blacklist.txt").openStream());
 
-		ModificationCardMiner mcm = new ModificationCardMiner();
+		PathwayCardMiner mcm = new PathwayCardMiner();
 		mcm.setBlacklist(black);
 
 		SimpleIOHandler io = new SimpleIOHandler();
