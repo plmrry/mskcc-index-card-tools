@@ -33,7 +33,8 @@ public class ModificationCardMiner
 	 * Miners used for generating cards.
 	 */
 	private AbstractMiner[] miners = new AbstractMiner[]{
-		new CSCO(), new CSCO_ButPart(), new CSCO_ThrContSmMol(), new BindingMiner(),
+		new CSCO(), new CSCO_ButPart(), new CSCO_ThrContSmMol(),
+		new BindingMiner(),
 		new ExpressionMiner()};
 
 	public static void main(String[] args) throws IOException
@@ -50,10 +51,10 @@ public class ModificationCardMiner
 		Model model = io.convertFromOWL(new GZIPInputStream(new URL(
 			"http://www.pathwaycommons.org/pc2/downloads/Pathway%20Commons.7.Reactome.BIOPAX.owl.gz").
 			openStream()));
-//		Model model = io.convertFromOWL(new FileInputStream("C:\\Temp\\temp.owl"));
+//		Model model = io.convertFromOWL(new FileInputStream("/home/ozgun/Documents/Darpa/BigMech/evaluation/ras_1.owl"));
 
 		mcm.mineAndCollect(model);
-		mcm.writeResults("C:\\Temp\\cards.json");
+		mcm.writeResults("/home/ozgun/Documents/Darpa/BigMech/evaluation/Reactome.json");
 	}
 
 	abstract class AbstractMiner extends AbstractSIFMiner

@@ -84,12 +84,6 @@
 			</snapshots>
 		</repository>
 		<repository>
-			<id>pattern.repo</id>
-			<name>BioPAX Pattern Framework Repo</name>
-			<url>http://maven-repo.biopax-pattern.googlecode.com/hg</url>
-			<snapshots><enabled>true</enabled></snapshots>
-		</repository>
-		<repository>
 			<id>ozgun.repo</id>
 			<name>Ozgun Repo</name>
 			<url>http://cbio.mskcc.org/~ozgun/m2repo/</url>

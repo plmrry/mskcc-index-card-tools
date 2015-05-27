@@ -109,13 +109,16 @@ public class FieldReaderUtil
 				if (bindsTo != null)
 				{
 					EntityReference er = bindsTo.getEntityFeatureOf();
-					String id = getGroundingIDOrName(er);
-					if (id != null)
+					if (er != null)
 					{
-						Map map = new LinkedHashMap();
-						list.add(map);
-						map.put("feature_type", "binding");
-						map.put("bound_to", id);
+						String id = getGroundingIDOrName(er);
+						if (id != null)
+						{
+							Map map = new LinkedHashMap();
+							list.add(map);
+							map.put("feature_type", "binding");
+							map.put("bound_to", id);
+						}
 					}
 				}
 			}
@@ -165,7 +168,10 @@ public class FieldReaderUtil
 		if (xrable instanceof SimplePhysicalEntity)
 		{
 			EntityReference er = ((SimplePhysicalEntity) xrable).getEntityReference();
-			return getXrefID(er, dbStr);
+			if (er != null)
+			{
+				return getXrefID(er, dbStr);
+			}
 		}
 
 		return null;
@@ -209,7 +215,11 @@ public class FieldReaderUtil
 		if (s != null && !s.isEmpty()) return s;
 		s = named.getStandardName();
 		if (s != null && !s.isEmpty()) return s;
-		return named.getName().iterator().next();
+		if (!named.getName().isEmpty())
+		{
+			return named.getName().iterator().next();
+		}
+		return "null";
 	}
 
 	public static Object convertToJASON(PhysicalEntity pe)
