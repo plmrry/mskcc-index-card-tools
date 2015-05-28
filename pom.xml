@@ -25,5 +25,6 @@
 		<module>web</module>
 		<module>nlp</module>
 		<module>extractor</module>
+		<module>comparator</module>
 	</modules>
 </project>
