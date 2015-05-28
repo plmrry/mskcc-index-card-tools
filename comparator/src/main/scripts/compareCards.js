@@ -5,14 +5,15 @@ var IndexCardReader = require('./IndexCardReader.js');
 
 function main(args)
 {
-	var inputFile = args[0];
+	var pcFile = args[0];
+	var inferenceFile = args[1];
 	var reader = new IndexCardReader();
 
-	reader.readCards(inputFile, function(data) {
-		var comparator = new IndexCardComparator();
-		comparator.compareCards(data);
-
-		console.log("# of entities: " + data.length);
+	reader.readCards(inferenceFile, function(inferenceData) {
+		reader.readCards(pcFile, function(pcData) {
+			var comparator = new IndexCardComparator();
+			comparator.compareCards(pcData, inferenceData);
+		});
 	});
 }
 
