@@ -37,10 +37,46 @@ var IndexCardComparator = function()
 		return updatedCards;
 	}
 
-	function findModelRelation(inferenceCard, matchingCards)
+	function findModelRelation(indexCard, matchingCards)
 	{
 		// TODO determine model relation wrt interaction type
-		return inferenceCard;
+		if (hasModification(indexCard))
+		{
+			var modifications = getModifications(indexCard);
+
+			// get all modifications from the matching cards
+			var matchingModifications = [];
+
+			_.each(matchingCards, function(card, idx) {
+				if (hasModification(card))
+				{
+					matchingModifications = matchingModifications.concat(getModifications(card));
+				}
+			});
+
+			// remove duplicates (if any)
+			matchingModifications = _.uniq(matchingModifications, function(ele) {
+				// this is required to make a deep object comparison
+				// another way would be to use _.isEqual() but _.uniq() does not
+				// get a comparator function as a parameter
+				return JSON.stringify(ele);
+			});
+
+			// TODO determine the model relation by comparing matchingModifications to modifications
+		}
+
+		return indexCard;
+	}
+
+	function hasModification(indexCard)
+	{
+		return (getModifications(indexCard) != null) &&
+		       (getModifications(indexCard).length > 0);
+	}
+
+	function getModifications(indexCard)
+	{
+		return indexCard["extracted_information"]["modifications"];
 	}
 
 	/**
