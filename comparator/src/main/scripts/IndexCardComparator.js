@@ -91,7 +91,8 @@ var IndexCardComparator = function()
 
 		_.each(queryIds, function(id, idx) {
 			_.each(idMap[id], function(card, idx) {
-				if (inferenceCard["interaction_type"] === card["interaction_type"])
+				if (inferenceCard["extracted_information"]["interaction_type"] ===
+				    card["extracted_information"]["interaction_type"])
 				{
 					matchingCards.push(card);
 				}
