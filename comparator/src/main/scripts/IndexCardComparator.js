@@ -8,6 +8,7 @@ var IndexCardComparator = function()
 	var SUPERSET = "superset";
 	var INTERSECT = "intersects";
 	var DISTINCT = "distinct";
+	var POS_RANGE = 1;
 
 	var _paIdMap = {};
 	var _pbIdMap = {};
@@ -42,8 +43,13 @@ var IndexCardComparator = function()
 			// TODO further filter matching cards wrt participant A
 
 			var updatedCard = findModelRelation(inferenceCard, matchingCards);
+
+			// TODO find best match within the match array (and update model relation field?)
 			updatedCards.push(updatedCard);
 		});
+
+		// TODO debug, remove when done
+		console.log(JSON.stringify(updatedCards));
 
 		return updatedCards;
 	}
@@ -81,10 +87,8 @@ var IndexCardComparator = function()
 
 			// determine the model relation by comparing modifications
 
-			// TODO add -/+1 for position equality...
-
 			var strongEqualityFn = function(modificationA, modificationB) {
-				return modificationA["position"] == modificationB["position"] &&
+				return isEqualPosition(modificationA, modificationB) &&
 				       modificationA["modification_type"].toLowerCase() == modificationB["modification_type"].toLowerCase();
 			};
 
@@ -108,7 +112,7 @@ var IndexCardComparator = function()
 				}
 				else if (modificationA["position"] != null &&
 				         modificationB["position"] != null &&
-				         modificationA["position"] != modificationB["position"])
+				         !isEqualPosition(modificationA, modificationB))
 				{
 					// both not null and different
 					diff = true;
@@ -117,6 +121,14 @@ var IndexCardComparator = function()
 				return diff;
 			};
 
+			// create a match field if there are matching cards
+			if (matchingCards.length > 0)
+			{
+				indexCard["match"] = [];
+			}
+
+			// for each matching card compare modifications with the modifications of
+			// the inference card and update the match field
 			_.each(matchingCards, function(card, idx) {
 				if (hasModification(card))
 				{
@@ -126,14 +138,38 @@ var IndexCardComparator = function()
 					                     weakEqualityFn,
 					                     weakDiffFn);
 
-					// TODO return best matching card
-					//indexCard["model_relation"] = result;
-					console.log(result);
+					indexCard["match"].push({type: result, card: card});
 				}
 			});
 		}
 
 		return indexCard;
+	}
+
+	/**
+	 * Checks the equality of position for 2 modifications.
+	 *
+	 * @param modificationA a modification
+	 * @param modificationB another modification
+	 * @returns {boolean} true if equal, false otherwise
+	 */
+	function isEqualPosition(modificationA, modificationB)
+	{
+		var posA = parseInt(modificationA["position"]);
+		var posB = parseInt(modificationB["position"]);
+
+		// pos A or pos B is not a number!
+		if (_.isNaN(posA) || _.isNaN(posB))
+		{
+			// use regular string equality
+			return (modificationA["position"] == modificationB["position"]);
+		}
+		else
+		{
+			// if the difference between 2 positions is within the range,
+			// then those positions are considered equal
+			return (Math.abs(posA - posB) <= POS_RANGE);
+		}
 	}
 
 	/**
@@ -229,6 +265,15 @@ var IndexCardComparator = function()
 		return intersection;
 	}
 
+	/**
+	 * Finds the difference between two sets wrt to
+	 * the given difference criteria as a function
+	 *
+	 * @param setA      a set
+	 * @param setB      another set
+	 * @param diffFn    difference function
+	 * @returns {Array} returns the difference set as an array
+	 */
 	function difference(setA, setB, diffFn)
 	{
 		diffFn = diffFn || function(a, b) {
@@ -324,6 +369,13 @@ var IndexCardComparator = function()
 		});
 	}
 
+	/**
+	 * Extracts recursively all possible ids from the given participant.
+	 *
+	 * @param participant     a participant (simple, complex or family member)
+	 * @param familyMembersFn optional function to retrieve the family members
+	 * @returns {Array}       extracted ids as an array
+	 */
 	function extractAllIds(participant, familyMembersFn)
 	{
 		// set a default family member extraction function if none provided
