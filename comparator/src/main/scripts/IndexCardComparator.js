@@ -13,6 +13,139 @@ var IndexCardComparator = function()
 	var _paIdMap = {};
 	var _pbIdMap = {};
 
+	// helper functions related to interaction types: modification
+	var _modification = {
+		/**
+		 * Checks if modification A is equal to modification B.
+		 * The equality condition:
+		 *    - positions must be equal (see isEqualPosition function)
+		 *    - modification types must be equal
+		 *
+		 * @param modificationA a modification
+		 * @param modificationB another modification
+		 * @returns {boolean}   true if modifications match the equality condition
+		 */
+		strongEquality: function (modificationA, modificationB)
+		{
+			return isEqualPosition(modificationA, modificationB) &&
+			       modificationA["modification_type"].toLowerCase() == modificationB["modification_type"].toLowerCase();
+		},
+		/**
+		 * Checks if modification A is equal to modification B.
+		 * The equality condition:
+		 *    - at least one position must be null
+		 *    - modification types must be equal
+		 *
+		 * @param modificationA a modification
+		 * @param modificationB another modification
+		 * @returns {boolean}   true if modifications match the equality condition
+		 */
+		weakEquality: function(modificationA, modificationB)
+		{
+			return modificationA["modification_type"].toLowerCase() == modificationB["modification_type"].toLowerCase() &&
+			       (modificationA["position"] == null || modificationB["position"] == null);
+		},
+		/**
+		 * Checks if modification A is different from modification B.
+		 * The difference condition:
+		 *    - modification types are different OR
+		 *    - modification A has a position but B does not have OR
+		 *    - both positions are valid and not equal
+		 *
+		 * @param modificationA a modification
+		 * @param modificationB another modification
+		 * @returns {boolean}   true if modifications match the difference condition
+		 */
+		weakDiff: function(modificationA, modificationB)
+		{
+			var diff = false;
+
+			if (modificationA["modification_type"].toLowerCase() != modificationB["modification_type"].toLowerCase())
+			{
+				// modification type is different
+				diff = true;
+			}
+			else if (modificationA["position"] != null && modificationB["position"] == null)
+			{
+				// modification A has a position but B does not have
+				diff = true;
+			}
+			else if (modificationA["position"] != null &&
+			         modificationB["position"] != null &&
+			         !isEqualPosition(modificationA, modificationB))
+			{
+				// both not null and different
+				diff = true;
+			}
+
+			return diff;
+		}
+	};
+
+	// helper functions related to interaction types: translocation
+	var _translocation = {
+		/**
+		 * Checks if translocation A is equal to translocation B.
+		 * The equality condition:
+		 *    - locations must be equal (see isEqualTranslocation function)
+		 *
+		 * @param translocationA a translocation
+		 * @param translocationB another translocation
+		 * @returns {boolean}   true if translocations match the equality condition
+		 */
+		strongEquality: function (translocationA, translocationB)
+		{
+			return isEqualTranslocation(translocationA, translocationB);
+		},
+		/**
+		 * Checks if translocation A is equal to translocation B.
+		 * The equality condition:
+		 *    - at least one to_location must be null
+		 *
+		 * @param translocationA a translocation
+		 * @param translocationB another translocation
+		 * @returns {boolean}   true if translocations match the equality condition
+		 */
+		weakEquality: function(translocationA, translocationB)
+		{
+			return translocationA.from.toLowerCase() == translocationB.from.toLowerCase() &&
+			       (translocationA.to == null || translocationB.to == null);
+		},
+		/**
+		 * Checks if translocation A is different from translocation B.
+		 * The difference condition:
+		 *    - from_locations are different
+		 *    - translocation A has a to_location but B does not have
+		 *    - both to_locations are valid and translocations are not equal
+		 *
+		 * @param translocationA a translocation
+		 * @param translocationB another translocation
+		 * @returns {boolean}   true if translocations match the difference condition
+		 */
+		weakDiff: function(translocationA, translocationB)
+		{
+			var diff = false;
+
+			if (translocationA.from.toLowerCase() != translocationB.from.toLowerCase())
+			{
+				diff = true;
+			}
+			else if (translocationA.to != null && translocationB.to == null)
+			{
+				// translocation A has a to_location but B does not have
+				diff = true;
+			}
+			else if (translocationA.to != null && translocationB.to != null &&
+				!isEqualTranslocation(translocationA, translocationB))
+			{
+				// both translocations are valid and different
+				diff = true;
+			}
+
+			return diff;
+		}
+	};
+
 	/**
 	 * Compares IndexCard arrays and generate IndexCards with
 	 * the comparison results.
@@ -92,6 +225,12 @@ var IndexCardComparator = function()
 
 	function findModelRelation(indexCard, matchingCards)
 	{
+		// create a match field if there are matching cards
+		if (matchingCards.length > 0)
+		{
+			indexCard["match"] = [];
+		}
+
 		// TODO determine model relation wrt interaction type
 
 		if (hasModification(indexCard))
@@ -100,12 +239,6 @@ var IndexCardComparator = function()
 
 			// determine the model relation by comparing modifications
 
-			// create a match field if there are matching cards
-			if (matchingCards.length > 0)
-			{
-				indexCard["match"] = [];
-			}
-
 			// for each matching card compare modifications with the modifications of
 			// the inference card and update the match field
 			_.each(matchingCards, function(card, idx) {
@@ -113,84 +246,41 @@ var IndexCardComparator = function()
 				{
 					var result = compare(modifications,
 					                     getModifications(card),
-					                     strongEqualityFn,
-					                     weakEqualityFn,
-					                     weakDiffFn);
+					                     _modification.strongEquality,
+					                     _modification.weakEquality,
+					                     _modification.weakDiff);
+
+					indexCard["match"].push({type: result, card: card});
+				}
+			});
+		}
+		else if (hasTranslocation(indexCard))
+		{
+			var translocation = getTranslocation(indexCard);
+
+			// for each matching card compare modifications with the modifications of
+			// the inference card and update the match field
+			_.each(matchingCards, function(card, idx) {
+				if (hasTranslocation(card))
+				{
+					var result = compare([translocation],
+					                     [getTranslocation(indexCard)],
+					                     _translocation.strongEquality,
+					                     _translocation.weakEquality,
+					                     _translocation.weakDiff);
 
 					indexCard["match"].push({type: result, card: card});
 				}
 			});
 		}
 
+		// remove the redundant "match" field if no match at all
+		if (indexCard["match"] && indexCard["match"].length == 0)
+		{
+			delete indexCard["match"];
+		}
+
 		return indexCard;
-	}
-
-	/**
-	 * Checks if modification A is equal to modification B.
-	 * The equality condition:
-	 *    - positions must be equal (see isEqualPosition function)
-	 *    - modification types must be equal
-	 *
-	 * @param modificationA a modification
-	 * @param modificationB another modification
-	 * @returns {boolean}   true if modifications match the equality condition
-	 */
-	function strongEqualityFn(modificationA, modificationB)
-	{
-		return isEqualPosition(modificationA, modificationB) &&
-		       modificationA["modification_type"].toLowerCase() == modificationB["modification_type"].toLowerCase();
-	}
-
-	/**
-	 * Checks if modification A is equal to modification B.
-	 * The equality condition:
-	 *    - at least one position must be null
-	 *    - modification types must be equal
-	 *
-	 * @param modificationA a modification
-	 * @param modificationB another modification
-	 * @returns {boolean}   true if modifications match the equality condition
-	 */
-	function weakEqualityFn(modificationA, modificationB)
-	{
-		return modificationA["modification_type"].toLowerCase() == modificationB["modification_type"].toLowerCase() &&
-		       (modificationA["position"] == null || modificationB["position"] == null);
-	}
-
-	/**
-	 * Checks if modification A is different from modification B.
-	 * The difference condition:
-	 *    - modification types are different OR
-	 *    - modification A has a position but B does not have OR
-	 *    - both positions are valid and not equal
-	 *
-	 * @param modificationA a modification
-	 * @param modificationB another modification
-	 * @returns {boolean}   true if modifications match the equality condition
-	 */
-	function weakDiffFn(modificationA, modificationB)
-	{
-		var diff = false;
-
-		if (modificationA["modification_type"].toLowerCase() != modificationB["modification_type"].toLowerCase())
-		{
-			// modification type is different
-			diff = true;
-		}
-		else if (modificationA["position"] != null && modificationB["position"] == null)
-		{
-			// modification A has a position but B does not have
-			diff = true;
-		}
-		else if (modificationA["position"] != null &&
-		         modificationB["position"] != null &&
-		         !isEqualPosition(modificationA, modificationB))
-		{
-			// both not null and different
-			diff = true;
-		}
-
-		return diff;
 	}
 
 	/**
@@ -217,6 +307,12 @@ var IndexCardComparator = function()
 			// then those positions are considered equal
 			return (Math.abs(posA - posB) <= POS_RANGE);
 		}
+	}
+
+	function isEqualTranslocation(translocationA, translocationB)
+	{
+		return translocationA.from.toLowerCase() == translocationB.from.toLowerCase() &&
+		       translocationA.to.toLowerCase() == translocationB.to.toLowerCase();
 	}
 
 	/**
@@ -351,6 +447,13 @@ var IndexCardComparator = function()
 		return difference;
 	}
 
+	function hasTranslocation(indexCard)
+	{
+		return interactionType(indexCard).toLowerCase() == "translocation" &&
+		       (indexCard["extracted_information"]["from_location"] != null ||
+		       indexCard["extracted_information"]["to_location"] != null)
+	}
+
 	function hasModification(indexCard)
 	{
 		return (getModifications(indexCard) != null) &&
@@ -360,6 +463,14 @@ var IndexCardComparator = function()
 	function getModifications(indexCard)
 	{
 		return indexCard["extracted_information"]["modifications"];
+	}
+
+	function getTranslocation(indexCard)
+	{
+		return {
+			from: indexCard["extracted_information"]["from_location"],
+			to: indexCard["extracted_information"]["to_location"]
+		};
 	}
 
 	/**
