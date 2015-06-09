@@ -54,6 +54,12 @@ var IndexCardComparator = function()
 		return updatedCards;
 	}
 
+	/**
+	 * Retrieves ids related to participant B for the given index card.
+	 *
+	 * @param indexCard an index card
+	 * @returns {Array} ids in an array
+	 */
 	function getPbQueryIds(indexCard)
 	{
 		// TODO currently we ignore complexes and protein families for participant B
@@ -71,6 +77,13 @@ var IndexCardComparator = function()
 		return queryIds;
 	}
 
+	/**
+	 * Checks for exact matching participantBs in given index cards.
+	 *
+	 * @param inferenceCard
+	 * @param modelCard
+	 * @returns {boolean} true if exact match, false otherwise
+	 */
 	function strictPbMatch(inferenceCard, modelCard)
 	{
 		return participantB(inferenceCard)["identifier"] != null &&
@@ -86,40 +99,6 @@ var IndexCardComparator = function()
 			var modifications = getModifications(indexCard);
 
 			// determine the model relation by comparing modifications
-
-			var strongEqualityFn = function(modificationA, modificationB) {
-				return isEqualPosition(modificationA, modificationB) &&
-				       modificationA["modification_type"].toLowerCase() == modificationB["modification_type"].toLowerCase();
-			};
-
-			var weakEqualityFn = function(modificationA, modificationB) {
-				return modificationA["modification_type"].toLowerCase() == modificationB["modification_type"].toLowerCase() &&
-				       (modificationA["position"] == null || modificationB["position"] == null);
-			};
-
-			var weakDiffFn = function(modificationA, modificationB) {
-				var diff = false;
-
-				if (modificationA["modification_type"].toLowerCase() != modificationB["modification_type"].toLowerCase())
-				{
-					// modification type is different
-					diff = true;
-				}
-				else if (modificationA["position"] != null && modificationB["position"] == null)
-				{
-					// modification A has a position but B does not have
-					diff = true;
-				}
-				else if (modificationA["position"] != null &&
-				         modificationB["position"] != null &&
-				         !isEqualPosition(modificationA, modificationB))
-				{
-					// both not null and different
-					diff = true;
-				}
-
-				return diff;
-			};
 
 			// create a match field if there are matching cards
 			if (matchingCards.length > 0)
@@ -147,7 +126,75 @@ var IndexCardComparator = function()
 	}
 
 	/**
-	 * Checks the equality of position for 2 modifications.
+	 * Checks if modification A is equal to modification B.
+	 * The equality condition:
+	 *    - positions must be equal (see isEqualPosition function)
+	 *    - modification types must be equal
+	 *
+	 * @param modificationA a modification
+	 * @param modificationB another modification
+	 * @returns {boolean}   true if modifications match the equality condition
+	 */
+	function strongEqualityFn(modificationA, modificationB)
+	{
+		return isEqualPosition(modificationA, modificationB) &&
+		       modificationA["modification_type"].toLowerCase() == modificationB["modification_type"].toLowerCase();
+	}
+
+	/**
+	 * Checks if modification A is equal to modification B.
+	 * The equality condition:
+	 *    - at least one position must be null
+	 *    - modification types must be equal
+	 *
+	 * @param modificationA a modification
+	 * @param modificationB another modification
+	 * @returns {boolean}   true if modifications match the equality condition
+	 */
+	function weakEqualityFn(modificationA, modificationB)
+	{
+		return modificationA["modification_type"].toLowerCase() == modificationB["modification_type"].toLowerCase() &&
+		       (modificationA["position"] == null || modificationB["position"] == null);
+	}
+
+	/**
+	 * Checks if modification A is different from modification B.
+	 * The difference condition:
+	 *    - modification types are different OR
+	 *    - modification A has a position but B does not have OR
+	 *    - both positions are valid and not equal
+	 *
+	 * @param modificationA a modification
+	 * @param modificationB another modification
+	 * @returns {boolean}   true if modifications match the equality condition
+	 */
+	function weakDiffFn(modificationA, modificationB)
+	{
+		var diff = false;
+
+		if (modificationA["modification_type"].toLowerCase() != modificationB["modification_type"].toLowerCase())
+		{
+			// modification type is different
+			diff = true;
+		}
+		else if (modificationA["position"] != null && modificationB["position"] == null)
+		{
+			// modification A has a position but B does not have
+			diff = true;
+		}
+		else if (modificationA["position"] != null &&
+		         modificationB["position"] != null &&
+		         !isEqualPosition(modificationA, modificationB))
+		{
+			// both not null and different
+			diff = true;
+		}
+
+		return diff;
+	}
+
+	/**
+	 * Checks the equality of positions for 2 modifications.
 	 *
 	 * @param modificationA a modification
 	 * @param modificationB another modification
