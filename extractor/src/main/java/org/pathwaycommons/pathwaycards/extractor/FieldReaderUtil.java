@@ -133,7 +133,9 @@ public class FieldReaderUtil
 	 */
 	public static String getHGNCSymbol(XReferrable xrable)
 	{
-		return getXrefID(xrable, "hgnc symbol");
+		String symbol = getXrefID(xrable, "hgnc symbol");
+		if (symbol != null) symbol = "HGNC:" + symbol;
+		return symbol;
 	}
 
 	/**
@@ -186,6 +188,21 @@ public class FieldReaderUtil
 		return null;
 	}
 
+	public static String getUniProtID(BioPAXElement ele)
+	{
+		if (ele instanceof Protein)
+		{
+			ele = ((Protein) ele).getEntityReference();
+		}
+
+		String id = ele.getRDFId();
+		if (id.contains("uniprot"))
+		{
+			return "Uniprot:" + id.substring(id.lastIndexOf("/") + 1);
+		}
+		return null;
+	}
+
 	public static String getGroundingIDOrName(BioPAXElement pe)
 	{
 		String s = getGroundingID(pe);
@@ -197,7 +214,7 @@ public class FieldReaderUtil
 	{
 		if (pe instanceof Protein || pe instanceof ProteinReference)
 		{
-			String s = getUniProtName((Named) pe);
+			String s = getUniProtID(pe);
 			if (s != null) return s;
 		}
 		else if (pe instanceof SmallMolecule || pe instanceof SmallMoleculeReference)
@@ -266,7 +283,7 @@ public class FieldReaderUtil
 
 		// Write simple molecules
 		Map map = new LinkedHashMap();
-		String upn = pe instanceof Protein ? getUniProtName(pe) : pe instanceof SmallMolecule ? getPubChemID(pe) : null;
+		String upn = pe instanceof Protein ? getUniProtID(pe) : pe instanceof SmallMolecule ? getPubChemID(pe) : null;
 		String sym = getHGNCSymbol(pe);
 		String name = pickAName(pe);
 
