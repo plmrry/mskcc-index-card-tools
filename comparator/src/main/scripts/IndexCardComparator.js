@@ -36,6 +36,8 @@ var IndexCardComparator = function()
 		 *    - at least one position must be null
 		 *    - modification types must be equal
 		 *
+		 * NOTE: Weak equality do not cover the strong equality conditions!
+		 *
 		 * @param modificationA a modification
 		 * @param modificationB another modification
 		 * @returns {boolean}   true if modifications match the equality condition
@@ -101,6 +103,8 @@ var IndexCardComparator = function()
 		 * Checks if translocation A is equal to translocation B.
 		 * The equality condition:
 		 *    - at least one to_location must be null
+		 *
+		 * NOTE: Weak equality do not cover the strong equality conditions!
 		 *
 		 * @param translocationA a translocation
 		 * @param translocationB another translocation
@@ -328,13 +332,6 @@ var IndexCardComparator = function()
 	 */
 	function compare(inferenceSet, modelSet, strongEqualityFn, weakEqualityFn, diffFn)
 	{
-		//var sortFn = function(modificationA, modificationB) {
-		//	return parseInt(modificationA["position"]) > modificationB(modificationB["position"]);
-		//};
-
-		//inferenceSet.sort(sortFn);
-		//modelSet.sort(sortFn);
-
 		// if no weak eq function is provided, use strong eq functions
 		weakEqualityFn = weakEqualityFn || strongEqualityFn;
 
@@ -345,9 +342,13 @@ var IndexCardComparator = function()
 		// difference of model set from inference set
 		var modelDiffInference = difference(modelSet, inferenceSet, diffFn);
 
-		// distinct: no matching element
-		if (weakIntersection.length == 0)
+		// weak intersection may not cover the strong intersection depending
+		// on the weak & strong equality functions, so making sure both
+		// intersection sets are empty
+		if (strongIntersection.length == 0 &&
+		    weakIntersection.length == 0)
 		{
+			// distinct: no matching element
 			return DISTINCT;
 		}
 
@@ -370,18 +371,21 @@ var IndexCardComparator = function()
 			}
 		}
 
+		// inference is subset of model (no weak difference)
 		if (inferenceSet.length < modelSet.length &&
 		    inferenceDiffModel.length == 0)
 		{
 			return SUBSET;
 		}
 
+		// inference is super set of model (no weak difference)
 		if (inferenceSet.length > modelSet.length &&
 		    modelDiffInference.length == 0)
 		{
 			return SUPERSET;
 		}
 
+		// the intersection set is not empty, and no other conditions hold
 		return INTERSECT;
 	}
 
