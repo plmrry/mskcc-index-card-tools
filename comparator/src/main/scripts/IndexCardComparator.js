@@ -286,6 +286,15 @@ var IndexCardComparator = function()
 		{
 			compareTranslocations(indexCard, matchingCards);
 		}
+		// TODO remaining: increases_activity, decreases_activity, increases, decreases
+		else if (hasIncreaseDecrease(indexCard))
+		{
+
+		}
+		else if (hasActivity(indexCard))
+		{
+
+		}
 
 		// add additional participant info for match result
 
@@ -299,7 +308,6 @@ var IndexCardComparator = function()
 			// we have matching participant B(s), now compare participant A(s)
 			else
 			{
-				identifyOppositeInteractions(indexCard, matchingCards);
 				compareParticipantAs(indexCard, matchingCards);
 			}
 		}
@@ -326,8 +334,8 @@ var IndexCardComparator = function()
 	}
 
 	/**
-	 * Checks if the interaction types of the index card is opposing to
-	 * the interaction of matched cards.
+	 * Checks if the interaction type of the index card is opposing to
+	 * the interaction of matched card.
 	 *
 	 * Opposing interactions:
 	 *      adds_modification X removes_modification
@@ -335,25 +343,19 @@ var IndexCardComparator = function()
 	 *      increases_activity X decreases_activity
 	 *
 	 * @param indexCard
-	 * @param matchingCards
+	 * @param matchingCard
 	 */
-	function identifyOppositeInteractions(indexCard, matchingCards)
+	function isOppositeInteractions(indexCard, matchingCard)
 	{
-		_.each(indexCard["match"], function(ele, idx){
-			var card = ele.card;
-			var interaction = interactionType(indexCard).toLowerCase();
-			var matchingInteraction = interactionType(card).toLowerCase();
+		var interaction = interactionType(indexCard).toLowerCase();
+		var matchingInteraction = interactionType(matchingCard).toLowerCase();
 
-			var result =
-				(interaction == "adds_modification" && matchingInteraction == "removes_modification") ||
-				(interaction == "removes_modification" && matchingInteraction == "adds_modification") ||
-				(interaction == "increases" && matchingInteraction == "decreases") ||
-				(interaction == "decreases" && matchingInteraction == "increases") ||
-				(interaction == "increases_activity" && matchingInteraction == "decreases_activity") ||
-				(interaction == "decreases_activity" && matchingInteraction == "increases_activity");
-
-			ele.oppositeInteractions = result;
-		});
+		return (interaction == "adds_modification" && matchingInteraction == "removes_modification") ||
+			(interaction == "removes_modification" && matchingInteraction == "adds_modification") ||
+			(interaction == "increases" && matchingInteraction == "decreases") ||
+			(interaction == "decreases" && matchingInteraction == "increases") ||
+			(interaction == "increases_activity" && matchingInteraction == "decreases_activity") ||
+			(interaction == "decreases_activity" && matchingInteraction == "increases_activity");
 	}
 
 	function compareModifications(indexCard, matchingCards)
@@ -373,7 +375,15 @@ var IndexCardComparator = function()
 				                     _modification.weakEquality,
 				                     _modification.weakDiff);
 
-				indexCard["match"].push({deltaFeature: result, card: card});
+				var conflict = false;
+
+				if (result != DISTINCT &&
+				    isOppositeInteractions(indexCard, card))
+				{
+					conflict = true;
+				}
+
+				indexCard["match"].push({deltaFeature: result, potentialConflict: conflict, card: card});
 			}
 		});
 	}
@@ -393,7 +403,16 @@ var IndexCardComparator = function()
 				                     _translocation.weakEquality,
 				                     _translocation.weakDiff);
 
-				indexCard["match"].push({deltaFeature: result, card: card});
+				// in case of DISTINCT result, check if there is a potential conflict
+				var conflict = false;
+
+				if (result == DISTINCT)
+				{
+					 conflict = (translocation.to.toLowerCase() == getTranslocation(indexCard).from.toLowerCase() &&
+					    translocation.from.toLowerCase() == getTranslocation(indexCard).to.toLowerCase());
+				}
+
+				indexCard["match"].push({deltaFeature: result, potentialConflict: conflict, card: card});
 			}
 		});
 	}
