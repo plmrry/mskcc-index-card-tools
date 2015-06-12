@@ -280,20 +280,20 @@ var IndexCardComparator = function()
 
 		if (hasModification(indexCard))
 		{
-			compareModifications(indexCard, matchingCards)
+			compareModification(indexCard, matchingCards)
 		}
 		else if (hasTranslocation(indexCard))
 		{
-			compareTranslocations(indexCard, matchingCards);
+			compareTranslocation(indexCard, matchingCards);
 		}
 		// TODO remaining: increases_activity, decreases_activity, increases, decreases
 		else if (hasIncreaseDecrease(indexCard))
 		{
-
+			compareInteractionType(indexCard, matchingCards);
 		}
 		else if (hasActivity(indexCard))
 		{
-
+			compareInteractionType(indexCard, matchingCards);
 		}
 
 		// add additional participant info for match result
@@ -308,14 +308,35 @@ var IndexCardComparator = function()
 			// we have matching participant B(s), now compare participant A(s)
 			else
 			{
-				compareParticipantAs(indexCard, matchingCards);
+				compareParticipantA(indexCard, matchingCards);
 			}
 		}
 
 		return indexCard;
 	}
 
-	function compareParticipantAs(indexCard, matchingCards)
+	function compareInteractionType(indexCard, matchingCards)
+	{
+		_.each(matchingCards, function(card, idx) {
+			var result = DISTINCT;
+			var conflict = false;
+
+			if (interactionType(indexCard).toLocaleLowerCase() == interactionType(card).toLowerCase())
+			{
+				result = EXACT;
+			}
+
+			if (result == DISTINCT &&
+			    isOppositeInteractions(indexCard))
+			{
+				conflict = true;
+			}
+
+			indexCard["match"].push({deltaFeature: result, potentialConflict: conflict, card: card});
+		});
+	}
+
+	function compareParticipantA(indexCard, matchingCards)
 	{
 		var indexCardPaIds = extractAllIds(participantA(indexCard));
 
@@ -358,7 +379,7 @@ var IndexCardComparator = function()
 			(interaction == "decreases_activity" && matchingInteraction == "increases_activity");
 	}
 
-	function compareModifications(indexCard, matchingCards)
+	function compareModification(indexCard, matchingCards)
 	{
 		var modifications = getModifications(indexCard);
 
@@ -388,7 +409,7 @@ var IndexCardComparator = function()
 		});
 	}
 
-	function compareTranslocations(indexCard, matchingCards)
+	function compareTranslocation(indexCard, matchingCards)
 	{
 		var translocation = getTranslocation(indexCard);
 
