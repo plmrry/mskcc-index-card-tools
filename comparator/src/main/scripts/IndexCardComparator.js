@@ -189,9 +189,6 @@ var IndexCardComparator = function()
 			var queryIds = getPbQueryIds(inferenceCard);
 
 			var matchingCards = findMatchingCards(queryIds, inferenceCard, _pbIdMap, matchFilter);
-
-			// TODO further filter matching cards wrt participant A
-
 			var updatedCard = findModelRelation(inferenceCard, matchingCards);
 
 			// TODO find best match within the match array (and update model relation field?)
@@ -260,8 +257,19 @@ var IndexCardComparator = function()
 		       (participantB(modelCard)["identifier"] === participantB(inferenceCard)["identifier"]);
 	}
 
+	/**
+	 * Finds the model relation between the given index card and all matching cards
+	 * by comparing certain features of the cards.
+	 *
+	 * @param indexCard
+	 * @param matchingCards
+	 * @returns the original index card with updated information
+	 */
 	function findModelRelation(indexCard, matchingCards)
 	{
+		// TODO we may want to create a mapping instead of adding new fields into the
+		// index card object in order to avoid modifying the original index card
+
 		// create a match field if there are matching cards
 		if (matchingCards.length > 0)
 		{
@@ -291,6 +299,7 @@ var IndexCardComparator = function()
 			// we have matching participant B(s), now compare participant A(s)
 			else
 			{
+				identifyOppositeInteractions(indexCard, matchingCards);
 				compareParticipantAs(indexCard, matchingCards);
 			}
 		}
@@ -313,6 +322,37 @@ var IndexCardComparator = function()
 			                     _participantId.weakDiff);
 
 			ele.participantA = result;
+		});
+	}
+
+	/**
+	 * Checks if the interaction types of the index card is opposing to
+	 * the interaction of matched cards.
+	 *
+	 * Opposing interactions:
+	 *      adds_modification X removes_modification
+	 *      increases X decreases
+	 *      increases_activity X decreases_activity
+	 *
+	 * @param indexCard
+	 * @param matchingCards
+	 */
+	function identifyOppositeInteractions(indexCard, matchingCards)
+	{
+		_.each(indexCard["match"], function(ele, idx){
+			var card = ele.card;
+			var interaction = interactionType(indexCard).toLowerCase();
+			var matchingInteraction = interactionType(card).toLowerCase();
+
+			var result =
+				(interaction == "adds_modification" && matchingInteraction == "removes_modification") ||
+				(interaction == "removes_modification" && matchingInteraction == "adds_modification") ||
+				(interaction == "increases" && matchingInteraction == "decreases") ||
+				(interaction == "decreases" && matchingInteraction == "increases") ||
+				(interaction == "increases_activity" && matchingInteraction == "decreases_activity") ||
+				(interaction == "decreases_activity" && matchingInteraction == "increases_activity");
+
+			ele.oppositeInteractions = result;
 		});
 	}
 
