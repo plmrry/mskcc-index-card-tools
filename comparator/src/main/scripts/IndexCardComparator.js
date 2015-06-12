@@ -150,6 +150,21 @@ var IndexCardComparator = function()
 		}
 	};
 
+	var _participantId = {
+		strongEquality: function(idA, idB)
+		{
+			return (idA.toLowerCase() == idB.toLowerCase());
+		},
+		weakEquality: function(idA, idB)
+		{
+			return (idA.toLowerCase() == idB.toLowerCase());
+		},
+		weakDiff: function(idA, idB)
+		{
+			return (idA.toLowerCase() != idB.toLowerCase());
+		}
+	};
+
 	/**
 	 * Compares IndexCard arrays and generate IndexCards with
 	 * the comparison results.
@@ -173,9 +188,7 @@ var IndexCardComparator = function()
 			// find matching cards for the participant b
 			var queryIds = getPbQueryIds(inferenceCard);
 
-			// TODO looking for strict id matching for now,
-			// ignoring complexes and family numbers...
-			var matchingCards = findMatchingCards(queryIds, inferenceCard, _pbIdMap, strictPbMatch);
+			var matchingCards = findMatchingCards(queryIds, inferenceCard, _pbIdMap, matchFilter);
 
 			// TODO further filter matching cards wrt participant A
 
@@ -215,6 +228,26 @@ var IndexCardComparator = function()
 	}
 
 	/**
+	 *
+	 * @param inferenceCard
+	 * @param modelCard
+	 * @returns {boolean}
+	 */
+	function matchFilter(inferenceCard, modelCard)
+	{
+		return (
+			// TODO looking for strict participant_b id matching for now,
+			// ignoring complexes and family numbers...
+			strictPbMatch(inferenceCard, modelCard) &&
+			// interaction types should be compatible
+			((hasModification(inferenceCard) && hasModification(modelCard)) ||
+			 (hasIncreaseDecrease(inferenceCard) && hasIncreaseDecrease(modelCard)) ||
+			 (hasActivity(inferenceCard) && hasActivity(modelCard)) ||
+			 (hasTranslocation(inferenceCard) && hasTranslocation(modelCard)))
+		);
+	}
+
+	/**
 	 * Checks for exact matching participantBs in given index cards.
 	 *
 	 * @param inferenceCard
@@ -235,58 +268,95 @@ var IndexCardComparator = function()
 			indexCard["match"] = [];
 		}
 
-		// TODO determine model relation wrt interaction type
+		// determine model relation wrt interaction type
 
 		if (hasModification(indexCard))
 		{
-			var modifications = getModifications(indexCard);
-
-			// determine the model relation by comparing modifications
-
-			// for each matching card compare modifications with the modifications of
-			// the inference card and update the match field
-			_.each(matchingCards, function(card, idx) {
-				if (hasModification(card))
-				{
-					var result = compare(modifications,
-					                     getModifications(card),
-					                     _modification.strongEquality,
-					                     _modification.weakEquality,
-					                     _modification.weakDiff);
-
-					indexCard["match"].push({type: result, card: card});
-				}
-			});
+			compareModifications(indexCard, matchingCards)
 		}
 		else if (hasTranslocation(indexCard))
 		{
-			var translocation = getTranslocation(indexCard);
-
-			// for each matching card compare modifications with the modifications of
-			// the inference card and update the match field
-			_.each(matchingCards, function(card, idx) {
-				if (hasTranslocation(card))
-				{
-					var result = compare([translocation],
-					                     [getTranslocation(indexCard)],
-					                     _translocation.strongEquality,
-					                     _translocation.weakEquality,
-					                     _translocation.weakDiff);
-
-					indexCard["match"].push({type: result, card: card});
-				}
-			});
+			compareTranslocations(indexCard, matchingCards);
 		}
 
-		// remove the redundant "match" field if no match at all
-		if (indexCard["match"] && indexCard["match"].length == 0)
+		// add additional participant info for match result
+
+		if (indexCard["match"])
 		{
-			delete indexCard["match"];
+			// remove the redundant "match" field if no match at all
+			if (indexCard["match"].length == 0)
+			{
+				delete indexCard["match"];
+			}
+			// we have matching participant B(s), now compare participant A(s)
+			else
+			{
+				compareParticipantAs(indexCard, matchingCards);
+			}
 		}
 
 		return indexCard;
 	}
 
+	function compareParticipantAs(indexCard, matchingCards)
+	{
+		var indexCardPaIds = extractAllIds(participantA(indexCard));
+
+		_.each(indexCard["match"], function(ele, idx){
+			var card = ele.card;
+			var matchedCardPaIds = extractAllIds(participantA(card));
+
+			var result = compare(indexCardPaIds,
+			                     matchedCardPaIds,
+			                     _participantId.strongEquality,
+			                     _participantId.weakEquality,
+			                     _participantId.weakDiff);
+
+			ele.participantA = result;
+		});
+	}
+
+	function compareModifications(indexCard, matchingCards)
+	{
+		var modifications = getModifications(indexCard);
+
+		// determine the model relation by comparing modifications
+
+		// for each matching card compare modifications with the modifications of
+		// the inference card and update the match field
+		_.each(matchingCards, function(card, idx) {
+			if (hasModification(card))
+			{
+				var result = compare(modifications,
+				                     getModifications(card),
+				                     _modification.strongEquality,
+				                     _modification.weakEquality,
+				                     _modification.weakDiff);
+
+				indexCard["match"].push({deltaFeature: result, card: card});
+			}
+		});
+	}
+
+	function compareTranslocations(indexCard, matchingCards)
+	{
+		var translocation = getTranslocation(indexCard);
+
+		// for each matching card compare modifications with the modifications of
+		// the inference card and update the match field
+		_.each(matchingCards, function(card, idx) {
+			if (hasTranslocation(card))
+			{
+				var result = compare([translocation],
+				                     [getTranslocation(indexCard)],
+				                     _translocation.strongEquality,
+				                     _translocation.weakEquality,
+				                     _translocation.weakDiff);
+
+				indexCard["match"].push({deltaFeature: result, card: card});
+			}
+		});
+	}
 	/**
 	 * Checks the equality of positions for 2 modifications.
 	 *
@@ -464,6 +534,17 @@ var IndexCardComparator = function()
 		       (getModifications(indexCard).length > 0);
 	}
 
+	function hasIncreaseDecrease(indexCard)
+	{
+		return interactionType(indexCard).toLowerCase() == "decrease" ||
+		       interactionType(indexCard).toLowerCase() == "increase";
+	}
+
+	function hasActivity(indexCard)
+	{
+		return interactionType(indexCard).toLowerCase().indexOf("activity") != -1;
+	}
+
 	function getModifications(indexCard)
 	{
 		return indexCard["extracted_information"]["modifications"];
@@ -496,8 +577,7 @@ var IndexCardComparator = function()
 
 		_.each(queryIds, function(id, idx) {
 			_.each(idMap[id], function(card, idx) {
-				if (interactionType(inferenceCard) === interactionType(card) &&
-					matchFilterFn(inferenceCard, card))
+				if (matchFilterFn(inferenceCard, card))
 				{
 					matchingCards.push(card);
 				}
@@ -546,6 +626,13 @@ var IndexCardComparator = function()
 		};
 
 		var ids = [];
+
+		// participant is null, return empty set...
+		if (!participant)
+		{
+			return ids;
+		}
+
 		var familyMembers = familyMembersFn(participant);
 
 		// if participant is an array then it is a complex
