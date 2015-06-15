@@ -1,6 +1,7 @@
 var _ = require('underscore');
 
-var IndexCardComparator = function () {
+var IndexCardComparator = function()
+{
     // match types
     var EXACT = "exact";
     var SUBSET = "subset";
@@ -8,12 +9,6 @@ var IndexCardComparator = function () {
     var INTERSECT = "intersects";
     var DISTINCT = "distinct";
     var POS_RANGE = 1;
-
-
-    var CONFLICTING = "Conflicting";
-    var CORROBORATION = "Corroboration";
-    var EXTENSION = "Extension";
-    var SPECIFICATION = "Specification";
 
     var _paIdMap = {};
     var _pbIdMap = {};
@@ -30,7 +25,8 @@ var IndexCardComparator = function () {
          * @param modificationB another modification
          * @returns {boolean}   true if modifications match the equality condition
          */
-        strongEquality: function (modificationA, modificationB) {
+        strongEquality: function (modificationA, modificationB)
+        {
             return isEqualPosition(modificationA, modificationB) &&
                 modificationA["modification_type"].toLowerCase() == modificationB["modification_type"].toLowerCase();
         },
@@ -46,7 +42,8 @@ var IndexCardComparator = function () {
          * @param modificationB another modification
          * @returns {boolean}   true if modifications match the equality condition
          */
-        weakEquality: function (modificationA, modificationB) {
+        weakEquality: function(modificationA, modificationB)
+        {
             return modificationA["modification_type"].toLowerCase() == modificationB["modification_type"].toLowerCase() &&
                 (modificationA["position"] == null || modificationB["position"] == null);
         },
@@ -61,19 +58,24 @@ var IndexCardComparator = function () {
          * @param modificationB another modification
          * @returns {boolean}   true if modifications match the difference condition
          */
-        weakDiff: function (modificationA, modificationB) {
+        weakDiff: function(modificationA, modificationB)
+        {
             var diff = false;
 
-            if (modificationA["modification_type"].toLowerCase() != modificationB["modification_type"].toLowerCase()) {
+            if (modificationA["modification_type"].toLowerCase() != modificationB["modification_type"].toLowerCase())
+            {
                 // modification type is different
                 diff = true;
             }
-            else if (modificationA["position"] != null && modificationB["position"] == null) {
+            else if (modificationA["position"] != null && modificationB["position"] == null)
+            {
                 // modification A has a position but B does not have
                 diff = true;
             }
             else if (modificationA["position"] != null &&
-                modificationB["position"] != null && !isEqualPosition(modificationA, modificationB)) {
+                modificationB["position"] != null &&
+                !isEqualPosition(modificationA, modificationB))
+            {
                 // both not null and different
                 diff = true;
             }
@@ -93,7 +95,8 @@ var IndexCardComparator = function () {
          * @param translocationB another translocation
          * @returns {boolean}   true if translocations match the equality condition
          */
-        strongEquality: function (translocationA, translocationB) {
+        strongEquality: function (translocationA, translocationB)
+        {
             return isEqualTranslocation(translocationA, translocationB);
         },
         /**
@@ -107,13 +110,10 @@ var IndexCardComparator = function () {
          * @param translocationB another translocation
          * @returns {boolean}   true if translocations match the equality condition
          */
-        weakEquality: function (translocationA, translocationB)
+        weakEquality: function(translocationA, translocationB)
         {
-            return ((translocationB.from.toLowerCase()===translocationA.from.toLowerCase()) &&
-                (translocationA.to === null || translocationB.to=== null)) ||
-                ((translocationB.to.toLowerCase()===translocationA.to.toLowerCase()) &&
-                (translocationA.from === null || translocationB.from === null));
-
+            return translocationA.from.toLowerCase() == translocationB.from.toLowerCase() &&
+                (translocationA.to == null || translocationB.to == null);
         },
         /**
          * Checks if translocation A is different from translocation B.
@@ -126,181 +126,89 @@ var IndexCardComparator = function () {
          * @param translocationB another translocation
          * @returns {boolean}   true if translocations match the difference condition
          */
-        weakDiff: function (translocationA, translocationB) {
+        weakDiff: function(translocationA, translocationB)
+        {
             var diff = false;
 
-            if (translocationA.from.toLowerCase() != translocationB.from.toLowerCase()) {
+            if (translocationA.from.toLowerCase() != translocationB.from.toLowerCase())
+            {
                 diff = true;
             }
-            else if (translocationA.to != null && translocationB.to == null) {
+            else if (translocationA.to != null && translocationB.to == null)
+            {
                 // translocation A has a to_location but B does not have
                 diff = true;
             }
-            else if (translocationA.to != null && translocationB.to != null && !isEqualTranslocation(translocationA, translocationB)) {
+            else if (translocationA.to != null && translocationB.to != null &&
+                !isEqualTranslocation(translocationA, translocationB))
+            {
                 // both translocations are valid and different
                 diff = true;
             }
-	/**
-	 * Loads the model cards into memory.
-	 *
-	 * @param modelCards    array of IndexCards
-	 */
-	function loadModel(modelCards)
-	{
-		// process pc cards to generate maps
-		_.each(modelCards, function(modelCard, idx) {
-			updateIdMap(_paIdMap, participantA(modelCard), modelCard);
-			updateIdMap(_pbIdMap, participantB(modelCard), modelCard);
-		});
-	}
-
-	/**
-	 * Compares given IndexCard(s) and generates an array of IndexCards with
-	 * the comparison results.
-	 *
-	 * @param inferenceCards    IndexCard(s) to add comparison result (may be an array or a single JSON)
-	 * @return {Array} an array of IndexCard JSONs with valid model_relation field
-	 */
-	function compareCards(inferenceCards)
-	{
-		var updatedCards = [];
 
             return diff;
         }
     };
-		if (!_.isArray(inferenceCards))
-		{
-			inferenceCards = [inferenceCards];
-		}
 
-		// for each inference card find matching PC card(s)
-		_.each(inferenceCards, function(inferenceCard, idx) {
-			// find matching cards for the participant b
-			var queryIds = getPbQueryIds(inferenceCard);
-
-			var matchingCards = findMatchingCards(queryIds, inferenceCard, _pbIdMap, matchFilter);
-			var updatedCard = findModelRelation(inferenceCard, matchingCards);
-
-			// TODO find best match within the match array (and update model relation field?)
-			classify(updatedCard);
-			updatedCards.push(updatedCard);
-		});
-
-		// TODO debug, remove when done
-		console.log(JSON.stringify(updatedCards));
-
-		return updatedCards;
-	}
-
-	/**
-	 * Retrieves ids related to participant B for the given index card.
-	 *
-	 * @param indexCard an index card
-	 * @returns {Array} ids in an array
-	 */
-	function getPbQueryIds(indexCard)
-	{
-		// TODO currently we ignore complexes and protein families for participant B
-		//var familyMembersFn = null; // TODO define a proper family member retrieval function
-		//var queryIds = extractAllIds(participantB(indexCard), familyMembersFn);
-		var queryIds = [];
-
-		var pbId = participantB(indexCard)["identifier"];
-
-		if (pbId != null)
-		{
-			queryIds.push(pbId);
-		}
-
-		return queryIds;
-	}
-
-    function classify(updatedCard) {
-        updatedCard.score = 0;
-        updatedCard.model_relation = EXTENSION; //Assume no good match by default
-
-        _.each(updatedCard.match, function (match)
+    var _participantId = {
+        strongEquality: function(idA, idB)
         {
+            return (idA.toLowerCase() == idB.toLowerCase());
+        },
+        weakEquality: function(idA, idB)
+        {
+            return (idA.toLowerCase() == idB.toLowerCase());
+        },
+        weakDiff: function(idA, idB)
+        {
+            return (idA.toLowerCase() != idB.toLowerCase());
+        }
+    };
 
-            //Exact matches
-            switch (match.deltaFeature) {
-                case EXACT:
-                {
-                    considerAForBase(match, updatedCard, 10, corr_conf);
-                }
-                case SUBSET:
-                {
-                    considerAForBase(match, updatedCard, 6, corr_conf);
-                }
-
-
-                case SUPERSET:
-                {
-                    var base = 6;
-                    switch (match.participantA) {
-                        case EXACT:
-                        {
-                            if (!match.potentialConflict) {
-                                update(SPECIFICATION, base, updatedCard, match);
-                            }
-                            else {
-                                update(CONFLICTING, base - 1, updatedCard, match);   //We will assume this to be better than all inexact
-                                // matches although conflicting.
-                            }
-                        }
-                        case SUBSET:      //Everything is a corroboration wrt/ A - Todo: more fine grain
-                        case SUPERSET:
-                        case INTERSECT:
-                        {
-                            if (!match.potentialConflict) {
-                                update(SPECIFICATION, base / 2, updatedCard, match);
-                            }
-                            else {
-                                update(CONFLICTING, (base / 2) - 1, updatedCard, match); //TODO: more fine grain needed here.. specifying w/
-                                // rt to A's existing features..
-                            }
-                        }
-                    }
-                }
-
-            }
+    /**
+     * Loads the model cards into memory.
+     *
+     * @param modelCards    array of IndexCards
+     */
+    function loadModel(modelCards)
+    {
+        // process pc cards to generate maps
+        _.each(modelCards, function(modelCard, idx) {
+            updateIdMap(_paIdMap, participantA(modelCard), modelCard);
+            updateIdMap(_pbIdMap, participantB(modelCard), modelCard);
         });
     }
 
-    function corr_conf(match, base, updatedCard) {
-        if (!match.potentialConflict) {
-            update(CORROBORATION, base, updatedCard, match);
+    /**
+     * Compares given IndexCard(s) and generates an array of IndexCards with
+     * the comparison results.
+     *
+     * @param inferenceCards    IndexCard(s) to add comparison result (may be an array or a single JSON)
+     * @return {Array} an array of IndexCard JSONs with valid model_relation field
+     */
+    function compareCards(inferenceCards)
+    {
+        var updatedCards = [];
+
+        if (!_.isArray(inferenceCards))
+        {
+            inferenceCards = [inferenceCards];
         }
-        else {
-            update(CONFLICTING, base - 1, updatedCard, match);   //We will assume this to be better than all inexact
-            // matches although conflicting.
-        }
+
+        // for each inference card find matching PC card(s)
+        _.each(inferenceCards, function(inferenceCard, idx) {
+            // find matching cards for the participant b
+            var queryIds = getPbQueryIds(inferenceCard);
+
+            var matchingCards = findMatchingCards(queryIds, inferenceCard, _pbIdMap, matchFilter);
+            var updatedCard = findModelRelation(inferenceCard, matchingCards);
+
+            // TODO find best match within the match array (and update model relation field?)
+            updatedCards.push(updatedCard);
+        });
+
+        return updatedCards;
     }
-
-    function considerAForBase(match, updatedCard, base, typefunc) {
-        switch (match.participantA) {
-            case EXACT:
-            {
-                typefunc(match, base, updatedCard);
-            }
-            case SUBSET:      //Everything is a corroboration wrt/ A - Todo: more fine grain
-            case SUPERSET:
-            case INTERSECT:
-            {
-                typefunc(match, base / 2, updatedCard);
-            }
-        }
-    }
-
-
-    function update(relation, classscore, updatedCard, match) {
-        if (updatedCard.score < classscore) {
-            updatedCard.model_relation = relation;
-            updatedCard.score = classscore;
-            updatedCard.model_element = match.model_element;
-        }
-    }
-
 
     /**
      * Retrieves ids related to participant B for the given index card.
@@ -308,7 +216,8 @@ var IndexCardComparator = function () {
      * @param indexCard an index card
      * @returns {Array} ids in an array
      */
-    function getPbQueryIds(indexCard) {
+    function getPbQueryIds(indexCard)
+    {
         // TODO currently we ignore complexes and protein families for participant B
         //var familyMembersFn = null; // TODO define a proper family member retrieval function
         //var queryIds = extractAllIds(participantB(indexCard), familyMembersFn);
@@ -316,7 +225,8 @@ var IndexCardComparator = function () {
 
         var pbId = participantB(indexCard)["identifier"];
 
-        if (pbId != null) {
+        if (pbId != null)
+        {
             queryIds.push(pbId);
         }
 
@@ -329,7 +239,8 @@ var IndexCardComparator = function () {
      * @param modelCard
      * @returns {boolean}
      */
-    function matchFilter(inferenceCard, modelCard) {
+    function matchFilter(inferenceCard, modelCard)
+    {
         return (
             // TODO looking for strict participant_b id matching for now,
             // ignoring complexes and family numbers...
@@ -349,7 +260,8 @@ var IndexCardComparator = function () {
      * @param modelCard
      * @returns {boolean} true if exact match, false otherwise
      */
-    function strictPbMatch(inferenceCard, modelCard) {
+    function strictPbMatch(inferenceCard, modelCard)
+    {
         return participantB(inferenceCard)["identifier"] != null &&
             (participantB(modelCard)["identifier"] === participantB(inferenceCard)["identifier"]);
     }
@@ -362,40 +274,49 @@ var IndexCardComparator = function () {
      * @param matchingCards
      * @returns the original index card with updated information
      */
-    function findModelRelation(indexCard, matchingCards) {
+    function findModelRelation(indexCard, matchingCards)
+    {
         // TODO we may want to create a mapping instead of adding new fields into the
         // index card object in order to avoid modifying the original index card
 
         // create a match field if there are matching cards
-        if (matchingCards.length > 0) {
+        if (matchingCards.length > 0)
+        {
             indexCard["match"] = [];
         }
 
         // determine model relation wrt interaction type
 
-        if (hasModification(indexCard)) {
+        if (hasModification(indexCard))
+        {
             compareModification(indexCard, matchingCards)
         }
-        else if (hasTranslocation(indexCard)) {
+        else if (hasTranslocation(indexCard))
+        {
             compareTranslocation(indexCard, matchingCards);
         }
         // TODO remaining: increases_activity, decreases_activity, increases, decreases
-        else if (hasIncreaseDecrease(indexCard)) {
+        else if (hasIncreaseDecrease(indexCard))
+        {
             compareInteractionType(indexCard, matchingCards);
         }
-        else if (hasActivity(indexCard)) {
+        else if (hasActivity(indexCard))
+        {
             compareInteractionType(indexCard, matchingCards);
         }
 
         // add additional participant info for match result
 
-        if (indexCard["match"]) {
+        if (indexCard["match"])
+        {
             // remove the redundant "match" field if no match at all
-            if (indexCard["match"].length == 0) {
+            if (indexCard["match"].length == 0)
+            {
                 delete indexCard["match"];
             }
             // we have matching participant B(s), now compare participant A(s)
-            else {
+            else
+            {
                 compareParticipantA(indexCard, matchingCards);
             }
         }
@@ -403,17 +324,20 @@ var IndexCardComparator = function () {
         return indexCard;
     }
 
-    function compareInteractionType(indexCard, matchingCards) {
-        _.each(matchingCards, function (card, idx) {
+    function compareInteractionType(indexCard, matchingCards)
+    {
+        _.each(matchingCards, function(card, idx) {
             var result = DISTINCT;
             var conflict = false;
 
-            if (interactionType(indexCard).toLocaleLowerCase() == interactionType(card).toLowerCase()) {
+            if (interactionType(indexCard).toLocaleLowerCase() == interactionType(card).toLowerCase())
+            {
                 result = EXACT;
             }
 
             if (result == DISTINCT &&
-                isOppositeInteractions(indexCard)) {
+                isOppositeInteractions(indexCard))
+            {
                 conflict = true;
             }
 
@@ -421,342 +345,434 @@ var IndexCardComparator = function () {
         });
     }
 
-				if (result == DISTINCT)
-				{
-					 conflict = (translocation.to.toLowerCase() == getTranslocation(indexCard).from.toLowerCase() &&
-					    translocation.from.toLowerCase() == getTranslocation(indexCard).to.toLowerCase());
-				}
+    function compareParticipantA(indexCard, matchingCards)
+    {
+        var indexCardPaIds = extractAllIds(participantA(indexCard));
 
-				indexCard["match"].push({deltaFeature: result, potentialConflict: conflict, card: card});
-			}
-		});
-	}
-	/**
-	 * Checks the equality of positions for 2 modifications.
-	 *
-	 * @param modificationA a modification
-	 * @param modificationB another modification
-	 * @returns {boolean} true if equal, false otherwise
-	 */
-	function isEqualPosition(modificationA, modificationB)
-	{
-		var posA = parseInt(modificationA["position"]);
-		var posB = parseInt(modificationB["position"]);
+        _.each(indexCard["match"], function(ele, idx){
+            var card = ele.card;
+            var matchedCardPaIds = extractAllIds(participantA(card));
 
-		// pos A or pos B is not a number!
-		if (_.isNaN(posA) || _.isNaN(posB))
-		{
-			// use regular string equality
-			return (modificationA["position"] == modificationB["position"]);
-		}
-		else
-		{
-			// if the difference between 2 positions is within the range,
-			// then those positions are considered equal
-			return (Math.abs(posA - posB) <= POS_RANGE);
-		}
-	}
+            var result = compare(indexCardPaIds,
+                matchedCardPaIds,
+                _participantId.strongEquality,
+                _participantId.weakEquality,
+                _participantId.weakDiff);
 
-	function isEqualTranslocation(translocationA, translocationB)
-	{
-		return translocationA.from.toLowerCase() == translocationB.from.toLowerCase() &&
-		       translocationA.to.toLowerCase() == translocationB.to.toLowerCase();
-	}
+            ele.participantA = result;
+        });
+    }
 
-	/**
-	 * Compares 2 sets wrt given equality and difference functions.
-	 * Returns one of the predefined comparison results.
-	 *
-	 * @param inferenceSet
-	 * @param modelSet
-	 * @param strongEqualityFn
-	 * @param weakEqualityFn
-	 * @param diffFn
-	 * @returns {string}
-	 */
-	function compare(inferenceSet, modelSet, strongEqualityFn, weakEqualityFn, diffFn)
-	{
-		// if no weak eq function is provided, use strong eq functions
-		weakEqualityFn = weakEqualityFn || strongEqualityFn;
+    /**
+     * Checks if the interaction type of the index card is opposing to
+     * the interaction of matched card.
+     *
+     * Opposing interactions:
+     *      adds_modification X removes_modification
+     *      increases X decreases
+     *      increases_activity X decreases_activity
+     *
+     * @param indexCard
+     * @param matchingCard
+     */
+    function isOppositeInteractions(indexCard, matchingCard)
+    {
+        var interaction = interactionType(indexCard).toLowerCase();
+        var matchingInteraction = interactionType(matchingCard).toLowerCase();
 
-		var strongIntersection = intersect(inferenceSet, modelSet, strongEqualityFn);
-		var weakIntersection = intersect(inferenceSet, modelSet, weakEqualityFn);
-		// difference of inference set from model set
-		var inferenceDiffModel = difference(inferenceSet, modelSet, diffFn);
-		// difference of model set from inference set
-		var modelDiffInference = difference(modelSet, inferenceSet, diffFn);
+        return (interaction == "adds_modification" && matchingInteraction == "removes_modification") ||
+            (interaction == "removes_modification" && matchingInteraction == "adds_modification") ||
+            (interaction == "increases" && matchingInteraction == "decreases") ||
+            (interaction == "decreases" && matchingInteraction == "increases") ||
+            (interaction == "increases_activity" && matchingInteraction == "decreases_activity") ||
+            (interaction == "decreases_activity" && matchingInteraction == "increases_activity");
+    }
 
-		// weak intersection may not cover the strong intersection depending
-		// on the weak & strong equality functions, so making sure both
-		// intersection sets are empty
-		if (strongIntersection.length == 0 &&
-		    weakIntersection.length == 0)
-		{
-			// distinct: no matching element
-			return DISTINCT;
-		}
+    function compareModification(indexCard, matchingCards)
+    {
+        var modifications = getModifications(indexCard);
 
-		if (inferenceSet.length == modelSet.length)
-		{
-			// exact match: all sets have equal number of elements and
-			// all elements are the same...
-			if (inferenceSet.length == strongIntersection.length)
-			{
-				return EXACT;
-			}
-			// no weak difference, inference set is a subset
-			else if (inferenceDiffModel.length == 0)
-			{
-				return SUBSET;
-			}
-			else if (modelDiffInference.length == 0)
-			{
-				return SUPERSET;
-			}
-		}
+        // determine the model relation by comparing modifications
 
-		// inference is subset of model (no weak difference)
-		if (inferenceSet.length < modelSet.length &&
-		    inferenceDiffModel.length == 0)
-		{
-			return SUBSET;
-		}
+        // for each matching card compare modifications with the modifications of
+        // the inference card and update the match field
+        _.each(matchingCards, function(card, idx) {
+            if (hasModification(card))
+            {
+                var result = compare(modifications,
+                    getModifications(card),
+                    _modification.strongEquality,
+                    _modification.weakEquality,
+                    _modification.weakDiff);
 
-		// inference is super set of model (no weak difference)
-		if (inferenceSet.length > modelSet.length &&
-		    modelDiffInference.length == 0)
-		{
-			return SUPERSET;
-		}
+                var conflict = false;
 
-		// the intersection set is not empty, and no other conditions hold
-		return INTERSECT;
-	}
+                if (result != DISTINCT &&
+                    isOppositeInteractions(indexCard, card))
+                {
+                    conflict = true;
+                }
 
-	function intersect(setA, setB, equalityFn)
-	{
-		equalityFn = equalityFn || function(a, b) {
-			return a === b;
-		};
+                indexCard["match"].push({deltaFeature: result, potentialConflict: conflict, card: card});
+            }
+        });
+    }
 
-		var intersection = [];
+    function compareTranslocation(indexCard, matchingCards)
+    {
+        var translocation = getTranslocation(indexCard);
 
-		for (var i=0; i < setA.length; i++)
-		{
-			for (var j=0; j < setB.length; j++)
-			{
-				if (equalityFn(setA[i], setB[j]))
-				{
-					intersection.push(setA[i]);
-					break;
-				}
-			}
-		}
+        // for each matching card compare modifications with the modifications of
+        // the inference card and update the match field
+        _.each(matchingCards, function(card, idx) {
+            if (hasTranslocation(card))
+            {
+                var result = compare([translocation],
+                    [getTranslocation(indexCard)],
+                    _translocation.strongEquality,
+                    _translocation.weakEquality,
+                    _translocation.weakDiff);
 
-		return intersection;
-	}
+                // in case of DISTINCT result, check if there is a potential conflict
+                var conflict = false;
 
-	/**
-	 * Finds the difference between two sets wrt to
-	 * the given difference criteria as a function
-	 *
-	 * @param setA      a set
-	 * @param setB      another set
-	 * @param diffFn    difference function
-	 * @returns {Array} returns the difference set as an array
-	 */
-	function difference(setA, setB, diffFn)
-	{
-		diffFn = diffFn || function(a, b) {
-			return a !== b;
-		};
+                if (result == DISTINCT)
+                {
+                    conflict = (translocation.to.toLowerCase() == getTranslocation(indexCard).from.toLowerCase() &&
+                    translocation.from.toLowerCase() == getTranslocation(indexCard).to.toLowerCase());
+                }
 
-		var difference = [];
+                indexCard["match"].push({deltaFeature: result, potentialConflict: conflict, card: card});
+            }
+        });
+    }
+    /**
+     * Checks the equality of positions for 2 modifications.
+     *
+     * @param modificationA a modification
+     * @param modificationB another modification
+     * @returns {boolean} true if equal, false otherwise
+     */
+    function isEqualPosition(modificationA, modificationB)
+    {
+        var posA = parseInt(modificationA["position"]);
+        var posB = parseInt(modificationB["position"]);
 
-		for (var i=0; i < setA.length; i++)
-		{
-			var diff = true;
+        // pos A or pos B is not a number!
+        if (_.isNaN(posA) || _.isNaN(posB))
+        {
+            // use regular string equality
+            return (modificationA["position"] == modificationB["position"]);
+        }
+        else
+        {
+            // if the difference between 2 positions is within the range,
+            // then those positions are considered equal
+            return (Math.abs(posA - posB) <= POS_RANGE);
+        }
+    }
 
-			for (var j=0; j < setB.length; j++)
-			{
-				if (!diffFn(setA[i], setB[j]))
-				{
-					diff = false;
-					break;
-				}
-			}
+    function isEqualTranslocation(translocationA, translocationB)
+    {
+        return translocationA.from.toLowerCase() == translocationB.from.toLowerCase() &&
+            translocationA.to.toLowerCase() == translocationB.to.toLowerCase();
+    }
 
-			if (diff)
-			{
-				difference.push(setA[i]);
-			}
-		}
+    /**
+     * Compares 2 sets wrt given equality and difference functions.
+     * Returns one of the predefined comparison results.
+     *
+     * @param inferenceSet
+     * @param modelSet
+     * @param strongEqualityFn
+     * @param weakEqualityFn
+     * @param diffFn
+     * @returns {string}
+     */
+    function compare(inferenceSet, modelSet, strongEqualityFn, weakEqualityFn, diffFn)
+    {
+        // if no weak eq function is provided, use strong eq functions
+        weakEqualityFn = weakEqualityFn || strongEqualityFn;
 
-		return difference;
-	}
+        var strongIntersection = intersect(inferenceSet, modelSet, strongEqualityFn);
+        var weakIntersection = intersect(inferenceSet, modelSet, weakEqualityFn);
+        // difference of inference set from model set
+        var inferenceDiffModel = difference(inferenceSet, modelSet, diffFn);
+        // difference of model set from inference set
+        var modelDiffInference = difference(modelSet, inferenceSet, diffFn);
 
-	function hasTranslocation(indexCard)
-	{
-		return interactionType(indexCard).toLowerCase() == "translocation" &&
-		       (indexCard["extracted_information"]["from_location"] != null ||
-		       indexCard["extracted_information"]["to_location"] != null)
-	}
+        // weak intersection may not cover the strong intersection depending
+        // on the weak & strong equality functions, so making sure both
+        // intersection sets are empty
+        if (strongIntersection.length == 0 &&
+            weakIntersection.length == 0)
+        {
+            // distinct: no matching element
+            return DISTINCT;
+        }
 
-	function hasModification(indexCard)
-	{
-		return (getModifications(indexCard) != null) &&
-		       (getModifications(indexCard).length > 0);
-	}
+        if (inferenceSet.length == modelSet.length)
+        {
+            // exact match: all sets have equal number of elements and
+            // all elements are the same...
+            if (inferenceSet.length == strongIntersection.length)
+            {
+                return EXACT;
+            }
+            // no weak difference, inference set is a subset
+            else if (inferenceDiffModel.length == 0)
+            {
+                return SUBSET;
+            }
+            else if (modelDiffInference.length == 0)
+            {
+                return SUPERSET;
+            }
+        }
 
-	function hasIncreaseDecrease(indexCard)
-	{
-		return interactionType(indexCard).toLowerCase() == "decrease" ||
-		       interactionType(indexCard).toLowerCase() == "increase";
-	}
+        // inference is subset of model (no weak difference)
+        if (inferenceSet.length < modelSet.length &&
+            inferenceDiffModel.length == 0)
+        {
+            return SUBSET;
+        }
 
-	function hasActivity(indexCard)
-	{
-		return interactionType(indexCard).toLowerCase().indexOf("activity") != -1;
-	}
+        // inference is super set of model (no weak difference)
+        if (inferenceSet.length > modelSet.length &&
+            modelDiffInference.length == 0)
+        {
+            return SUPERSET;
+        }
 
-	function getModifications(indexCard)
-	{
-		return indexCard["extracted_information"]["modifications"];
-	}
+        // the intersection set is not empty, and no other conditions hold
+        return INTERSECT;
+    }
 
-	function getTranslocation(indexCard)
-	{
-		return {
-			from: indexCard["extracted_information"]["from_location"],
-			to: indexCard["extracted_information"]["to_location"]
-		};
-	}
+    function intersect(setA, setB, equalityFn)
+    {
+        equalityFn = equalityFn || function(a, b) {
+                return a === b;
+            };
 
-	/**
-	 * If no filter function provided, matches cards wrt interaction type only.
-	 *
-	 * @param queryIds
-	 * @param inferenceCard
-	 * @param idMap
-	 * @param matchFilterFn additional filter function
-	 */
-	function findMatchingCards(queryIds, inferenceCard, idMap, matchFilterFn)
-	{
-		// set default filter function if not defined
-		matchFilterFn = matchFilterFn || function(inferenceCard, modelCard) {
-			return true;
-		};
+        var intersection = [];
 
-		var matchingCards = [];
+        for (var i=0; i < setA.length; i++)
+        {
+            for (var j=0; j < setB.length; j++)
+            {
+                if (equalityFn(setA[i], setB[j]))
+                {
+                    intersection.push(setA[i]);
+                    break;
+                }
+            }
+        }
 
-		_.each(queryIds, function(id, idx) {
-			_.each(idMap[id], function(card, idx) {
-				if (matchFilterFn(inferenceCard, card))
-				{
-					matchingCards.push(card);
-				}
-			});
-		});
+        return intersection;
+    }
 
-		return matchingCards;
-	}
+    /**
+     * Finds the difference between two sets wrt to
+     * the given difference criteria as a function
+     *
+     * @param setA      a set
+     * @param setB      another set
+     * @param diffFn    difference function
+     * @returns {Array} returns the difference set as an array
+     */
+    function difference(setA, setB, diffFn)
+    {
+        diffFn = diffFn || function(a, b) {
+                return a !== b;
+            };
 
-	/**
-	 * Update the given map by using the given field value as a key.
-	 *
-	 * @param idMap         map to be updated
-	 * @param participant   participant object (can be an array in case of complex)
-	 * @param indexCard     index card that the participant belongs
-	 */
-	function updateIdMap(idMap, participant, indexCard)
-	{
-		var ids = extractAllIds(participant);
+        var difference = [];
 
-		_.each(ids, function(id, idx) {
-			if (id != null)
-			{
-				if (idMap[id] == null)
-				{
-					idMap[id] = [];
-				}
+        for (var i=0; i < setA.length; i++)
+        {
+            var diff = true;
 
-				idMap[id].push(indexCard);
-			}
-		});
-	}
+            for (var j=0; j < setB.length; j++)
+            {
+                if (!diffFn(setA[i], setB[j]))
+                {
+                    diff = false;
+                    break;
+                }
+            }
 
-	/**
-	 * Extracts recursively all possible ids from the given participant.
-	 *
-	 * @param participant     a participant (simple, complex or family member)
-	 * @param familyMembersFn optional function to retrieve the family members
-	 * @returns {Array}       extracted ids as an array
-	 */
-	function extractAllIds(participant, familyMembersFn)
-	{
-		// set a default family member extraction function if none provided
-		familyMembersFn = familyMembersFn || function(participant) {
-			return participant["family_members"];
-		};
+            if (diff)
+            {
+                difference.push(setA[i]);
+            }
+        }
 
-		var ids = [];
+        return difference;
+    }
 
-		// participant is null, return empty set...
-		if (!participant)
-		{
-			return ids;
-		}
+    function hasTranslocation(indexCard)
+    {
+        return interactionType(indexCard).toLowerCase() == "translocation" &&
+            (indexCard["extracted_information"]["from_location"] != null ||
+            indexCard["extracted_information"]["to_location"] != null)
+    }
 
-		var familyMembers = familyMembersFn(participant);
+    function hasModification(indexCard)
+    {
+        return (getModifications(indexCard) != null) &&
+            (getModifications(indexCard).length > 0);
+    }
 
-		// if participant is an array then it is a complex
-		if (_.isArray(participant))
-		{
-			_.each(participant, function(ele, idx) {
-				ids = ids.concat(extractAllIds(ele, familyMembersFn));
-			});
-		}
-		// if entity type is protein family,
-		// then we need to use family_members array
-		else if (participant["entity_type"] == "protein_family" &&
-		         familyMembers != null)
-		{
-			_.each(familyMembers, function(ele, idx) {
-				ids = ids.concat(extractAllIds(ele, familyMembersFn));
-			});
-		}
-		// else it is a simple participant
-		else
-		{
-			var id = participant["identifier"];
+    function hasIncreaseDecrease(indexCard)
+    {
+        return interactionType(indexCard).toLowerCase() == "decrease" ||
+            interactionType(indexCard).toLowerCase() == "increase";
+    }
 
-			// if the identifier field exists
-			if (id != null)
-			{
-				ids.push(id);
-			}
-		}
+    function hasActivity(indexCard)
+    {
+        return interactionType(indexCard).toLowerCase().indexOf("activity") != -1;
+    }
 
-		return ids;
-	}
+    function getModifications(indexCard)
+    {
+        return indexCard["extracted_information"]["modifications"];
+    }
 
-	function participantA(indexCard)
-	{
-		return indexCard["extracted_information"]["participant_a"];
-	}
+    function getTranslocation(indexCard)
+    {
+        return {
+            from: indexCard["extracted_information"]["from_location"],
+            to: indexCard["extracted_information"]["to_location"]
+        };
+    }
 
-	function participantB(indexCard)
-	{
-		return indexCard["extracted_information"]["participant_b"];
-	}
+    /**
+     * If no filter function provided, matches cards wrt interaction type only.
+     *
+     * @param queryIds
+     * @param inferenceCard
+     * @param idMap
+     * @param matchFilterFn additional filter function
+     */
+    function findMatchingCards(queryIds, inferenceCard, idMap, matchFilterFn)
+    {
+        // set default filter function if not defined
+        matchFilterFn = matchFilterFn || function(inferenceCard, modelCard) {
+                return true;
+            };
 
-	function interactionType(indexCard)
-	{
-		return indexCard["extracted_information"]["interaction_type"];
-	}
+        var matchingCards = [];
 
-	// public functions
-	this.compareCards = compareCards;
-	this.loadModel = loadModel;
+        _.each(queryIds, function(id, idx) {
+            _.each(idMap[id], function(card, idx) {
+                if (matchFilterFn(inferenceCard, card))
+                {
+                    matchingCards.push(card);
+                }
+            });
+        });
+
+        return matchingCards;
+    }
+
+    /**
+     * Update the given map by using the given field value as a key.
+     *
+     * @param idMap         map to be updated
+     * @param participant   participant object (can be an array in case of complex)
+     * @param indexCard     index card that the participant belongs
+     */
+    function updateIdMap(idMap, participant, indexCard)
+    {
+        var ids = extractAllIds(participant);
+
+        _.each(ids, function(id, idx) {
+            if (id != null)
+            {
+                if (idMap[id] == null)
+                {
+                    idMap[id] = [];
+                }
+
+                idMap[id].push(indexCard);
+            }
+        });
+    }
+
+    /**
+     * Extracts recursively all possible ids from the given participant.
+     *
+     * @param participant     a participant (simple, complex or family member)
+     * @param familyMembersFn optional function to retrieve the family members
+     * @returns {Array}       extracted ids as an array
+     */
+    function extractAllIds(participant, familyMembersFn)
+    {
+        // set a default family member extraction function if none provided
+        familyMembersFn = familyMembersFn || function(participant) {
+                return participant["family_members"];
+            };
+
+        var ids = [];
+
+        // participant is null, return empty set...
+        if (!participant)
+        {
+            return ids;
+        }
+
+        var familyMembers = familyMembersFn(participant);
+
+        // if participant is an array then it is a complex
+        if (_.isArray(participant))
+        {
+            _.each(participant, function(ele, idx) {
+                ids = ids.concat(extractAllIds(ele, familyMembersFn));
+            });
+        }
+        // if entity type is protein family,
+        // then we need to use family_members array
+        else if (participant["entity_type"] == "protein_family" &&
+            familyMembers != null)
+        {
+            _.each(familyMembers, function(ele, idx) {
+                ids = ids.concat(extractAllIds(ele, familyMembersFn));
+            });
+        }
+        // else it is a simple participant
+        else
+        {
+            var id = participant["identifier"];
+
+            // if the identifier field exists
+            if (id != null)
+            {
+                ids.push(id);
+            }
+        }
+
+        return ids;
+    }
+
+    function participantA(indexCard)
+    {
+        return indexCard["extracted_information"]["participant_a"];
+    }
+
+    function participantB(indexCard)
+    {
+        return indexCard["extracted_information"]["participant_b"];
+    }
+
+    function interactionType(indexCard)
+    {
+        return indexCard["extracted_information"]["interaction_type"];
+    }
+
+    // public functions
+    this.compareCards = compareCards;
+    this.loadModel = loadModel;
 };
 
+module.exports = IndexCardComparator;
