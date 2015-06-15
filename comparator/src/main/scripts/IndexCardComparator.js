@@ -234,35 +234,14 @@ var IndexCardComparator = function()
                 }
                 case SUPERSET:
                 {
-                    var base = 6;
-                    switch (match.participantA) {
-                        case EXACT:
-                        {
-                            if (!match.potentialConflict) {
-                                update(SPECIFICATION, base, updatedCard, match);
-                            }
-                            else {
-                                update(CONFLICTING, base - 1, updatedCard, match);   //We will assume this to be better than all inexact
-                                // matches although conflicting.
-                            }
-                        }
-                        case SUBSET:      //Everything is a corroboration wrt/ A - Todo: more fine grain
-                        case SUPERSET:
-                        case INTERSECT:
-                        {
-                            if (!match.potentialConflict) {
-                                update(SPECIFICATION, base / 2, updatedCard, match);
-                            }
-                            else {
-                                update(CONFLICTING, (base / 2) - 1, updatedCard, match); //TODO: more fine grain needed here.. specifying w/
-                                // rt to A's existing features..
-                            }
-                        }
-                    }
+                    considerAForBase(match, updatedCard, 6, spec_conf);
                 }
+
+                 //We will assume intersection and distinct to be extensions
             }
         });
     }
+
     function corr_conf(match, base, updatedCard) {
         if (!match.potentialConflict) {
             update(CORROBORATION, base, updatedCard, match);
@@ -272,17 +251,34 @@ var IndexCardComparator = function()
             // matches although conflicting.
         }
     }
+
+    function spec_conf() {
+        if (!match.potentialConflict) {
+            update(SPECIFICATION, base, updatedCard, match);
+        }
+        else {
+            update(CONFLICTING, base - 1, updatedCard, match);   //We will assume this to be better than all inexact
+            // matches although conflicting.
+        }
+    }
+
     function considerAForBase(match, updatedCard, base, typefunc) {
         switch (match.participantA) {
             case EXACT:
             {
                 typefunc(match, base, updatedCard);
             }
-            case SUBSET:      //Everything is a corroboration wrt/ A - Todo: more fine grain
-            case SUPERSET:
-            case INTERSECT:
+            case SUBSET:
             {
                 typefunc(match, base / 2, updatedCard);
+            }
+            case SUPERSET:
+            {
+                spec_conf(match, base / 2, updatedCard);
+            }
+            case INTERSECT:
+            {
+                spec_conf(match, base / 3, updatedCard);
             }
         }
     }
