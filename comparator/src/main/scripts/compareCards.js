@@ -42,12 +42,12 @@ function main(args)
 							if (output != null)
 							{
 								var outputFile = output + "/" + filename.substr(filename.lastIndexOf("/"));
-								fs.writeFileSync(outputFile, JSON.stringify(result));
+								fs.writeFileSync(outputFile, stringfyOutput(result));
 							}
 							else
 							{
 								// write to std out
-								console.log(JSON.stringify(result));
+								console.log(stringfyOutput(result));
 							}
 						});
 					}
@@ -65,12 +65,12 @@ function main(args)
 				// assuming output is a file
 				if (output != null)
 				{
-					fs.writeFileSync(output, JSON.stringify(result));
+					fs.writeFileSync(output, stringfyOutput(result));
 				}
 				else
 				{
 					// write to std out
-					console.log(JSON.stringify(result));
+					console.log(stringfyOutput(result));
 				}
 			});
 		}
@@ -105,6 +105,11 @@ function walk(dir, done) {
 			});
 		});
 	});
+}
+
+function stringfyOutput(json)
+{
+	return JSON.stringify(json, null, 4);
 }
 
 // argv[0]: node -- argv[1]: compareCards.js

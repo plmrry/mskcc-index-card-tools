@@ -697,7 +697,7 @@ var IndexCardComparator = function()
 	{
 		return interactionType(indexCard).toLowerCase() == "translocation" &&
 		       (indexCard["extracted_information"]["from_location"] != null ||
-		       indexCard["extracted_information"]["to_location"] != null)
+		       indexCard["extracted_information"]["to_location"] != null);
 	}
 
 	function hasModification(indexCard)
