@@ -10,6 +10,12 @@ var IndexCardComparator = function()
 	var DISTINCT = "distinct";
 	var POS_RANGE = 1;
 
+
+    var CONFLICTING = "Conflicting";
+    var CORROBORATION = "Corroboration";
+    var EXTENSION = "Extension";
+    var SPECIFICATION = "Specification";
+
 	var _paIdMap = {};
 	var _pbIdMap = {};
 
@@ -112,8 +118,10 @@ var IndexCardComparator = function()
 		 */
 		weakEquality: function(translocationA, translocationB)
 		{
-			return translocationA.from.toLowerCase() == translocationB.from.toLowerCase() &&
-			       (translocationA.to == null || translocationB.to == null);
+            return ((translocationB.from.toLowerCase() == translocationA.from.toLowerCase()) &&
+                (translocationA.to == null || translocationB.to == null)) ||
+                ((translocationB.to.toLowerCase() == translocationA.to.toLowerCase()) &&
+                (translocationA.from == null || translocationB.from == null));
 		},
 		/**
 		 * Checks if translocation A is different from translocation B.
@@ -203,13 +211,88 @@ var IndexCardComparator = function()
 			var matchingCards = findMatchingCards(queryIds, inferenceCard, _pbIdMap, matchFilter);
 			var updatedCard = findModelRelation(inferenceCard, matchingCards);
 
-			// TODO find best match within the match array (and update model relation field?)
+            classify(updatedCard);
 			updatedCards.push(updatedCard);
 		});
 
 		return updatedCards;
 	}
 
+    function classify(updatedCard) {
+        updatedCard.score = 0;
+        updatedCard.model_relation = EXTENSION; //Assume no good match by default
+        _.each(updatedCard.match, function (match) {
+            //Exact matches
+            switch (match.deltaFeature) {
+                case EXACT:
+                {
+                    considerAForBase(match, updatedCard, 10, corr_conf);
+                }
+                case SUBSET:
+                {
+                    considerAForBase(match, updatedCard, 6, corr_conf);
+                }
+                case SUPERSET:
+                {
+                    var base = 6;
+                    switch (match.participantA) {
+                        case EXACT:
+                        {
+                            if (!match.potentialConflict) {
+                                update(SPECIFICATION, base, updatedCard, match);
+                            }
+                            else {
+                                update(CONFLICTING, base - 1, updatedCard, match);   //We will assume this to be better than all inexact
+                                // matches although conflicting.
+                            }
+                        }
+                        case SUBSET:      //Everything is a corroboration wrt/ A - Todo: more fine grain
+                        case SUPERSET:
+                        case INTERSECT:
+                        {
+                            if (!match.potentialConflict) {
+                                update(SPECIFICATION, base / 2, updatedCard, match);
+                            }
+                            else {
+                                update(CONFLICTING, (base / 2) - 1, updatedCard, match); //TODO: more fine grain needed here.. specifying w/
+                                // rt to A's existing features..
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+    function corr_conf(match, base, updatedCard) {
+        if (!match.potentialConflict) {
+            update(CORROBORATION, base, updatedCard, match);
+        }
+        else {
+            update(CONFLICTING, base - 1, updatedCard, match);   //We will assume this to be better than all inexact
+            // matches although conflicting.
+        }
+    }
+    function considerAForBase(match, updatedCard, base, typefunc) {
+        switch (match.participantA) {
+            case EXACT:
+            {
+                typefunc(match, base, updatedCard);
+            }
+            case SUBSET:      //Everything is a corroboration wrt/ A - Todo: more fine grain
+            case SUPERSET:
+            case INTERSECT:
+            {
+                typefunc(match, base / 2, updatedCard);
+            }
+        }
+    }
+    function update(relation, classscore, updatedCard, match) {
+        if (updatedCard.score < classscore) {
+            updatedCard.model_relation = relation;
+            updatedCard.score = classscore;
+            updatedCard.model_element = match.model_element;
+        }
+    }
 	/**
 	 * Retrieves ids related to participant B for the given index card.
 	 *
