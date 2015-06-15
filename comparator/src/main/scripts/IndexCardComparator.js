@@ -207,9 +207,6 @@ var IndexCardComparator = function()
 			updatedCards.push(updatedCard);
 		});
 
-		// TODO debug, remove when done
-		console.log(JSON.stringify(updatedCards));
-
 		return updatedCards;
 	}
 
