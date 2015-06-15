@@ -21,7 +21,6 @@ function main(args)
 		comparator.loadModel(modelData);
 
 		// if fragment input is a directory, process each file separately
-		// assuming each
 		if (fs.lstatSync(fragment).isDirectory())
 		{
 			walk(fragment, function(err, files) {
@@ -30,28 +29,8 @@ function main(args)
 					throw err;
 				}
 
-				_.each(files, function(filename, idx) {
-					if (filename.toLowerCase().indexOf(".json") != -1)
-					{
-						// in order to read a single JSON object we need "null" pattern
-						reader.readCards(filename, null, function (inferenceData)
-						{
-							var result = comparator.compareCards(inferenceData);
-
-							// assuming output is a directory too
-							if (output != null)
-							{
-								var outputFile = output + "/" + filename.substr(filename.lastIndexOf("/"));
-								fs.writeFileSync(outputFile, stringfyOutput(result));
-							}
-							else
-							{
-								// write to std out
-								console.log(stringfyOutput(result));
-							}
-						});
-					}
-				});
+				files = filterJson(files);
+				processAllFiles(files, reader, comparator, output);
 			});
 
 		}
@@ -105,6 +84,51 @@ function walk(dir, done) {
 			});
 		});
 	});
+}
+
+function processAllFiles(files, reader, comparator, output)
+{
+	var filename = files.pop();
+
+	// in order to read a single JSON object we need "null" pattern
+	reader.readCards(filename, null, function (inferenceData)
+	{
+		var result = comparator.compareCards(inferenceData);
+
+		// assuming output is a directory too
+		if (output != null)
+		{
+			// TODO ignoring the output dir param for now, and writing the output into input dir
+			//var outputFile = output + "/" + filename.substr(filename.lastIndexOf("/"));
+			var outputFile = filename.substr(0, filename.lastIndexOf(".")) + "_mskcc.json";
+			fs.writeFileSync(outputFile, stringfyOutput(result));
+		}
+		else
+		{
+			// write to std out
+			console.log(stringfyOutput(result));
+		}
+
+		if (files.length > 0)
+		{
+			processAllFiles(files, reader, comparator, output);
+		}
+	});
+
+}
+
+function filterJson(files)
+{
+	var jsons = [];
+
+	_.each(files, function(filename, idx) {
+		if (filename.toLowerCase().indexOf(".json") != -1)
+		{
+			jsons.push(filename)
+		}
+	});
+
+	return jsons;
 }
 
 function stringfyOutput(json)
