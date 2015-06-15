@@ -118,10 +118,17 @@ var IndexCardComparator = function()
 		 */
 		weakEquality: function(translocationA, translocationB)
 		{
-            return ((translocationB.from.toLowerCase() == translocationA.from.toLowerCase()) &&
-                (translocationA.to == null || translocationB.to == null)) ||
-                ((translocationB.to.toLowerCase() == translocationA.to.toLowerCase()) &&
-                (translocationA.from == null || translocationB.from == null));
+			// one of the "to" locations null, and "from" locations are equal
+			var equalFrom = (translocationA.to == null || translocationB.to == null) &&
+			                (translocationB.from != null && translocationA.from != null &&
+			                translocationB.from.toLowerCase() == translocationA.from.toLowerCase());
+
+			// one of the "from" locations is null, and "to" locations are equal
+            var equalTo = (translocationA.from == null || translocationB.from == null) &&
+                          (translocationB.to != null && translocationA.to != null &&
+                          translocationB.to.toLowerCase() == translocationA.to.toLowerCase());
+
+			return equalFrom || equalTo;
 		},
 		/**
 		 * Checks if translocation A is different from translocation B.
@@ -138,8 +145,9 @@ var IndexCardComparator = function()
 		{
 			var diff = false;
 
-			if (translocationA.from.toLowerCase() != translocationB.from.toLowerCase())
+			if (translocationA.from != null && translocationB.from == null)
 			{
+				// translocation A has a to_location but B does not have
 				diff = true;
 			}
 			else if (translocationA.to != null && translocationB.to == null)
@@ -147,8 +155,15 @@ var IndexCardComparator = function()
 				// translocation A has a to_location but B does not have
 				diff = true;
 			}
-			else if (translocationA.to != null && translocationB.to != null &&
-				!isEqualTranslocation(translocationA, translocationB))
+			else if (translocationA.from != null &&
+			         translocationB.from != null &&
+			         translocationA.from.toLowerCase() != translocationB.from.toLowerCase())
+			{
+				diff = true;
+			}
+			else if (translocationA.to != null &&
+			         translocationB.to != null &&
+			         translocationA.to.toLowerCase() != translocationB.to.toLowerCase())
 			{
 				// both translocations are valid and different
 				diff = true;
@@ -553,8 +568,15 @@ var IndexCardComparator = function()
 
 	function isEqualTranslocation(translocationA, translocationB)
 	{
-		return translocationA.from.toLowerCase() == translocationB.from.toLowerCase() &&
-		       translocationA.to.toLowerCase() == translocationB.to.toLowerCase();
+		var equalFrom = (translocationA.from == null && translocationB.from == null) ||
+				(translocationA.from != null && translocationB.from != null &&
+				translocationA.from.toLowerCase() == translocationB.from.toLowerCase());
+
+		var equalTo = (translocationA.to == null && translocationB.to == null) ||
+			(translocationA.to != null && translocationB.to != null &&
+			translocationA.to.toLowerCase() == translocationB.to.toLowerCase());
+		
+		return equalTo && equalFrom;
 	}
 
 	/**
@@ -692,8 +714,10 @@ var IndexCardComparator = function()
 	function hasTranslocation(indexCard)
 	{
 		return interactionType(indexCard).toLowerCase() == "translocation" &&
-		       (indexCard["extracted_information"]["from_location"] != null ||
-		       indexCard["extracted_information"]["to_location"] != null);
+			(indexCard["extracted_information"]["from_location"] != null ||
+			indexCard["extracted_information"]["to_location"] != null ||
+			indexCard["from_location"] != null ||
+			indexCard["to_location"] != null);
 	}
 
 	function hasModification(indexCard)
@@ -721,8 +745,8 @@ var IndexCardComparator = function()
 	function getTranslocation(indexCard)
 	{
 		return {
-			from: indexCard["extracted_information"]["from_location"],
-			to: indexCard["extracted_information"]["to_location"]
+			from: indexCard["extracted_information"]["from_location"] || indexCard["from_location"],
+			to: indexCard["extracted_information"]["to_location"] || indexCard["to_location"]
 		};
 	}
 
