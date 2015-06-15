@@ -12,12 +12,12 @@ function main(args)
 	var output = args[2];
 
 	var reader = new IndexCardReader();
+	var comparator = new IndexCardComparator();
 
 	// read model data from the model input file
 	// (in order to properly read an array of data we need "*" as pattern)
 	reader.readCards(modelFile, "*", function (modelData)
 	{
-		var comparator = new IndexCardComparator();
 		comparator.loadModel(modelData);
 
 		// if fragment input is a directory, process each file separately
@@ -60,7 +60,6 @@ function main(args)
 		{
 			reader.readCards(fragment, "*", function (inferenceData)
 			{
-				var comparator = new IndexCardComparator();
 				var result = comparator.compareCards(inferenceData);
 
 				// assuming output is a file
