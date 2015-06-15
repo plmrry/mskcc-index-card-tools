@@ -522,7 +522,7 @@ var IndexCardComparator = function()
 			if (hasTranslocation(card))
 			{
 				var result = compare([translocation],
-				                     [getTranslocation(indexCard)],
+				                     [getTranslocation(card)],
 				                     _translocation.strongEquality,
 				                     _translocation.weakEquality,
 				                     _translocation.weakDiff);
@@ -532,8 +532,12 @@ var IndexCardComparator = function()
 
 				if (result == DISTINCT)
 				{
-					 conflict = (translocation.to.toLowerCase() == getTranslocation(indexCard).from.toLowerCase() &&
-					    translocation.from.toLowerCase() == getTranslocation(indexCard).to.toLowerCase());
+					conflict = translocation.to &&
+					           translocation.from &&
+					           getTranslocation(indexCard).from &&
+					           getTranslocation(indexCard).to &&
+					           (translocation.to.toLowerCase() == getTranslocation(indexCard).from.toLowerCase() &&
+					            translocation.from.toLowerCase() == getTranslocation(indexCard).to.toLowerCase());
 				}
 
 				indexCard["match"].push({deltaFeature: result, potentialConflict: conflict, card: card});
