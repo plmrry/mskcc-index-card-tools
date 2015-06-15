@@ -9,13 +9,15 @@ function main(args)
 {
 	var modelFile = args[0];
 	var fragment = args[1];
+	var output = args[2];
+
 	var reader = new IndexCardReader();
+	var comparator = new IndexCardComparator();
 
 	// read model data from the model input file
 	// (in order to properly read an array of data we need "*" as pattern)
 	reader.readCards(modelFile, "*", function (modelData)
 	{
-		var comparator = new IndexCardComparator();
 		comparator.loadModel(modelData);
 
 		// if fragment input is a directory, process each file separately
@@ -34,7 +36,19 @@ function main(args)
 						// in order to read a single JSON object we need "null" pattern
 						reader.readCards(filename, null, function (inferenceData)
 						{
-							comparator.compareCards(inferenceData);
+							var result = comparator.compareCards(inferenceData);
+
+							// assuming output is a directory too
+							if (output != null)
+							{
+								var outputFile = output + "/" + filename.substr(filename.lastIndexOf("/"));
+								fs.writeFileSync(outputFile, JSON.stringify(result));
+							}
+							else
+							{
+								// write to std out
+								console.log(JSON.stringify(result));
+							}
 						});
 					}
 				});
@@ -46,8 +60,18 @@ function main(args)
 		{
 			reader.readCards(fragment, "*", function (inferenceData)
 			{
-				var comparator = new IndexCardComparator();
-				comparator.compareCards(inferenceData);
+				var result = comparator.compareCards(inferenceData);
+
+				// assuming output is a file
+				if (output != null)
+				{
+					fs.writeFileSync(output, JSON.stringify(result));
+				}
+				else
+				{
+					// write to std out
+					console.log(JSON.stringify(result));
+				}
 			});
 		}
 	});
