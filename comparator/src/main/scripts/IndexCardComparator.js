@@ -267,7 +267,7 @@ var IndexCardComparator = function()
         }
     }
 
-    function spec_conf() {
+    function spec_conf(match, base, updatedCard) {
         if (!match.potentialConflict) {
             update(SPECIFICATION, base, updatedCard, match);
         }
