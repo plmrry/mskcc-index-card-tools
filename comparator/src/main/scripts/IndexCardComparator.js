@@ -166,22 +166,29 @@ var IndexCardComparator = function()
 	};
 
 	/**
+	 * Loads the model cards into memory.
+	 *
+	 * @param modelCards    array of IndexCards
+	 */
+	function loadModel(modelCards)
+	{
+		// process pc cards to generate maps
+		_.each(modelCards, function(modelCard, idx) {
+			updateIdMap(_paIdMap, participantA(modelCard), modelCard);
+			updateIdMap(_pbIdMap, participantB(modelCard), modelCard);
+		});
+	}
+
+	/**
 	 * Compares IndexCard arrays and generate IndexCards with
 	 * the comparison results.
 	 *
-	 * @param pcCards           array of IndexCards (from Pathway Commons)
 	 * @param inferenceCards    array of IndexCards to add comparison result
 	 * @return {Array} an array of IndexCard JSONs with valid model_relation field
 	 */
-	function compareCards(pcCards, inferenceCards)
+	function compareCards(inferenceCards)
 	{
 		var updatedCards = [];
-
-		// process pc cards to generate maps
-		_.each(pcCards, function(pcCard, idx) {
-			updateIdMap(_paIdMap, participantA(pcCard), pcCard);
-			updateIdMap(_pbIdMap, participantB(pcCard), pcCard);
-		});
 
 		// for each inference card find matching PC card(s)
 		_.each(inferenceCards, function(inferenceCard, idx) {
@@ -763,6 +770,7 @@ var IndexCardComparator = function()
 
 	// public functions
 	this.compareCards = compareCards;
+	this.loadModel = loadModel;
 };
 
 module.exports = IndexCardComparator;
