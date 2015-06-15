@@ -6,14 +6,20 @@ var es = require('event-stream');
 
 var IndexCardReader = function()
 {
-	function readCards(filename, callback)
+	/**
+	 *
+	 * @param filename  input file
+	 * @param pattern   parse pattern (filter)
+	 * @param callback  callback function to be invoked on parse end
+	 */
+	function readCards(filename, pattern, callback)
 	{
 		var cards = [];
 
 		console.log("[" + new Date() + "] started processing input file: " + filename);
 
 		var	readStream = fs.createReadStream(filename, {encoding: 'utf8'});
-		var	parser = JSONStream.parse("*");
+		var	parser = JSONStream.parse(pattern);
 		readStream.pipe(parser);
 
 		parser.on('data', function(data) {
