@@ -180,15 +180,20 @@ var IndexCardComparator = function()
 	}
 
 	/**
-	 * Compares IndexCard arrays and generate IndexCards with
+	 * Compares given IndexCard(s) and generates an array of IndexCards with
 	 * the comparison results.
 	 *
-	 * @param inferenceCards    array of IndexCards to add comparison result
+	 * @param inferenceCards    IndexCard(s) to add comparison result (may be an array or a single JSON)
 	 * @return {Array} an array of IndexCard JSONs with valid model_relation field
 	 */
 	function compareCards(inferenceCards)
 	{
 		var updatedCards = [];
+
+		if (!_.isArray(inferenceCards))
+		{
+			inferenceCards = [inferenceCards];
+		}
 
 		// for each inference card find matching PC card(s)
 		_.each(inferenceCards, function(inferenceCard, idx) {
