@@ -44,12 +44,12 @@ function main(args)
 				// assuming output is a file
 				if (output != null)
 				{
-					fs.writeFileSync(output, stringfyOutput(result));
+					fs.writeFileSync(output, generateOutput(result));
 				}
 				else
 				{
 					// write to std out
-					console.log(stringfyOutput(result));
+					console.log(generateOutput(result));
 				}
 			});
 		}
@@ -101,12 +101,12 @@ function processAllFiles(files, reader, comparator, output)
 			// TODO ignoring the output dir param for now, and writing the output into input dir
 			//var outputFile = output + "/" + filename.substr(filename.lastIndexOf("/"));
 			var outputFile = filename.substr(0, filename.lastIndexOf(".")) + "_mskcc.json";
-			fs.writeFileSync(outputFile, stringfyOutput(result));
+			fs.writeFileSync(outputFile, generateOutput(result));
 		}
 		else
 		{
 			// write to std out
-			console.log(stringfyOutput(result));
+			console.log(generateOutput(result));
 		}
 
 		if (files.length > 0)
@@ -122,7 +122,8 @@ function filterJson(files)
 	var jsons = [];
 
 	_.each(files, function(filename, idx) {
-		if (filename.toLowerCase().indexOf(".json") != -1)
+		if (filename.toLowerCase().indexOf(".json") != -1 &&
+		    filename.toLowerCase().indexOf("_mskcc") == -1)
 		{
 			jsons.push(filename)
 		}
@@ -131,9 +132,32 @@ function filterJson(files)
 	return jsons;
 }
 
-function stringfyOutput(json)
+function generateOutput(json)
 {
-	return JSON.stringify(json, null, 4);
+	var outputJson = [];
+
+	if (_.isArray(json))
+	{
+		_.each(json, function(ele, idx) {
+			var clone = _.extend({}, ele);
+			outputJson.push(clone);
+			// remove match array (comment out for debug)
+			delete clone.match;
+		});
+
+		if (outputJson.length === 1)
+		{
+			outputJson = outputJson[0];
+		}
+	}
+	else
+	{
+		outputJson = _.extend({}, json);
+		// remove match array (comment out for debug)
+		delete outputJson.match;
+	}
+
+	return JSON.stringify(outputJson, null, 4);
 }
 
 // argv[0]: node -- argv[1]: compareCards.js
