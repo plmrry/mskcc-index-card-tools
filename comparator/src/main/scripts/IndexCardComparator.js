@@ -466,7 +466,7 @@ var IndexCardComparator = function()
 				delete indexCard["match"];
 			}
 			// we have matching participant B(s), now compare participant A(s)
-			else
+			else if (!hasBind(indexCard))
 			{
 				compareParticipantA(indexCard, matchingCards);
 			}
@@ -688,27 +688,27 @@ var IndexCardComparator = function()
 		// weak intersection may not cover the strong intersection depending
 		// on the weak & strong equality functions, so making sure both
 		// intersection sets are empty
-		if (strongIntersection.length == 0 &&
-		    weakIntersection.length == 0)
+		if (strongIntersection.length === 0 &&
+		    weakIntersection.length === 0)
 		{
 			// distinct: no matching element
 			return DISTINCT;
 		}
 
-		if (inferenceSet.length == modelSet.length)
+		if (inferenceSet.length === modelSet.length)
 		{
 			// exact match: all sets have equal number of elements and
 			// all elements are the same...
-			if (inferenceSet.length == strongIntersection.length)
+			if (inferenceSet.length === strongIntersection.length)
 			{
 				return EXACT;
 			}
 			// no weak difference, inference set is a subset
-			else if (inferenceDiffModel.length == 0)
+			else if (inferenceDiffModel.length === 0)
 			{
 				return SUBSET;
 			}
-			else if (modelDiffInference.length == 0)
+			else if (modelDiffInference.length === 0)
 			{
 				return SUPERSET;
 			}
@@ -716,14 +716,14 @@ var IndexCardComparator = function()
 
 		// inference is subset of model (no weak difference)
 		if (inferenceSet.length < modelSet.length &&
-		    inferenceDiffModel.length == 0)
+		    inferenceDiffModel.length === 0)
 		{
 			return SUBSET;
 		}
 
 		// inference is super set of model (no weak difference)
 		if (inferenceSet.length > modelSet.length &&
-		    modelDiffInference.length == 0)
+		    modelDiffInference.length === 0)
 		{
 			return SUPERSET;
 		}
