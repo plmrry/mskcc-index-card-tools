@@ -18,6 +18,7 @@ var IndexCardComparator = function()
 
 	var _paIdMap = {};
 	var _pbIdMap = {};
+	var _allIdMap = {};
 
 	// helper functions related to interaction types: modification
 	var _modification = {
@@ -199,6 +200,8 @@ var IndexCardComparator = function()
 		_.each(modelCards, function(modelCard, idx) {
 			updateIdMap(_paIdMap, participantA(modelCard), modelCard);
 			updateIdMap(_pbIdMap, participantB(modelCard), modelCard);
+			updateIdMap(_allIdMap, participantA(modelCard), modelCard);
+			updateIdMap(_allIdMap, participantB(modelCard), modelCard);
 		});
 	}
 
@@ -220,10 +223,26 @@ var IndexCardComparator = function()
 
 		// for each inference card find matching PC card(s)
 		_.each(inferenceCards, function(inferenceCard, idx) {
-			// find matching cards for the participant b
-			var queryIds = getPbQueryIds(inferenceCard);
+			var queryIds;
+			var matchingCards;
 
-			var matchingCards = findMatchingCards(queryIds, inferenceCard, _pbIdMap, matchFilter);
+			// "binds" should be handled separately
+			if (hasBind(inferenceCard))
+			{
+				// find matching cards for both participants
+				queryIds = _.uniq(extractAllIds(participantA(inferenceCard)).concat(
+					extractAllIds(participantB(inferenceCard))));
+
+				matchingCards = findMatchingCards(queryIds, inferenceCard, _allIdMap, matchFilter);
+			}
+			// all other interactions
+			else
+			{
+				// find matching cards for the participant b
+				queryIds = getPbQueryIds(inferenceCard);
+				matchingCards = findMatchingCards(queryIds, inferenceCard, _pbIdMap, matchFilter);
+			}
+
 			var updatedCard = findModelRelation(inferenceCard, matchingCards);
 
             classify(updatedCard);
@@ -237,22 +256,52 @@ var IndexCardComparator = function()
         updatedCard.score = 0;
         updatedCard.model_relation = EXTENSION; //Assume no good match by default
         _.each(updatedCard.match, function (match) {
-            //Exact matches
-            switch (match.deltaFeature) {
-                case EXACT:
-                {
-                    considerAForBase(match, updatedCard, 10, corr_conf);
-                }
-                case SUBSET:
-                {
-                    considerAForBase(match, updatedCard, 6, corr_conf);
-                }
-                case SUPERSET:
-                {
-                    considerAForBase(match, updatedCard, 6, spec_conf);
-                }
+	        // if not binds
+            if (interactionType(updatedCard).toLowerCase().indexOf("binds") == -1)
+            {
+	            //Exact matches
+	            switch (match.deltaFeature)
+	            {
+		            case EXACT:
+		            {
+			            considerAForBase(match, updatedCard, 10, corr_conf);
+			            break;
+		            }
+		            case SUBSET:
+		            {
+			            considerAForBase(match, updatedCard, 6, corr_conf);
+			            break;
+		            }
+		            case SUPERSET:
+		            {
+			            considerAForBase(match, updatedCard, 6, spec_conf);
+			            break;
+		            }
 
-                 //We will assume intersection and distinct to be extensions
+		            //We will assume intersection and distinct to be extensions
+	            }
+            }
+            // binds
+	        else
+            {
+	            switch (match.deltaFeature)
+	            {
+		            case EXACT:
+		            {
+			            update(CORROBORATION, 10, updatedCard, match);
+			            break;
+		            }
+		            //case SUBSET:
+		            //{
+			         //   update(CORROBORATION, 5, updatedCard, match);
+			         //   break;
+		            //}
+		            //case SUPERSET:
+		            //{
+			         //   update(SPECIFICATION, 5, updatedCard, match);
+			         //   break;
+		            //}
+	            }
             }
         });
     }
@@ -282,18 +331,22 @@ var IndexCardComparator = function()
             case EXACT:
             {
                 typefunc(match, base, updatedCard);
+	            break;
             }
             case SUBSET:
             {
                 typefunc(match, base / 2, updatedCard);
+	            break;
             }
             case SUPERSET:
             {
                 spec_conf(match, base / 2, updatedCard);
+	            break;
             }
             case INTERSECT:
             {
                 spec_conf(match, base / 3, updatedCard);
+	            break;
             }
         }
     }
@@ -338,12 +391,13 @@ var IndexCardComparator = function()
 		return (
 			// TODO looking for strict participant_b id matching for now,
 			// ignoring complexes and family numbers...
-			strictPbMatch(inferenceCard, modelCard) &&
+			hasBind(inferenceCard) && hasBind(modelCard) ||
+			(strictPbMatch(inferenceCard, modelCard) &&
 			// interaction types should be compatible
 			((hasModification(inferenceCard) && hasModification(modelCard)) ||
 			 (hasIncreaseDecrease(inferenceCard) && hasIncreaseDecrease(modelCard)) ||
 			 (hasActivity(inferenceCard) && hasActivity(modelCard)) ||
-			 (hasTranslocation(inferenceCard) && hasTranslocation(modelCard)))
+			 (hasTranslocation(inferenceCard) && hasTranslocation(modelCard))))
 		);
 	}
 
@@ -389,7 +443,10 @@ var IndexCardComparator = function()
 		{
 			compareTranslocation(indexCard, matchingCards);
 		}
-		// TODO remaining: increases_activity, decreases_activity, increases, decreases
+		else if (hasBind(indexCard))
+		{
+			compareBind(indexCard, matchingCards);
+		}
 		else if (hasIncreaseDecrease(indexCard))
 		{
 			compareInteractionType(indexCard, matchingCards);
@@ -454,6 +511,28 @@ var IndexCardComparator = function()
 			                     _participantId.weakDiff);
 
 			ele.participantA = result;
+		});
+	}
+
+	function compareBind(indexCard, matchingCards)
+	{
+		var indexCardIds = _.uniq(extractAllIds(participantA(indexCard)).concat(
+			extractAllIds(participantB(indexCard))));
+
+		_.each(matchingCards, function(card, idx){
+			if (hasBind(card))
+			{
+				var matchedCardIds = _.uniq(extractAllIds(participantA(card)).concat(
+					extractAllIds(participantB(card))));
+
+				var result = compare(indexCardIds,
+				                     matchedCardIds,
+				                     _participantId.strongEquality,
+				                     _participantId.weakEquality,
+				                     _participantId.weakDiff);
+
+				indexCard["match"].push({deltaFeature: result, potentialConflict: false, card: card});
+			}
 		});
 	}
 
@@ -741,6 +820,11 @@ var IndexCardComparator = function()
 		return interactionType(indexCard).toLowerCase().indexOf("activity") != -1;
 	}
 
+	function hasBind(indexCard)
+	{
+		return interactionType(indexCard).toLowerCase().indexOf("binds") != -1;
+	}
+
 	function getModifications(indexCard)
 	{
 		return indexCard["extracted_information"]["modifications"];
@@ -859,7 +943,7 @@ var IndexCardComparator = function()
 			}
 		}
 
-		return ids;
+		return _.uniq(ids);
 	}
 
 	function participantA(indexCard)
