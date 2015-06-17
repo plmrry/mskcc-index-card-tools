@@ -196,11 +196,13 @@ public class FieldReaderUtil
 			{
 				ele = ((Protein) ele).getEntityReference();
 			}
-
-			String id = ele.getRDFId();
-			if (id.contains("uniprot"))
+			if(ele!=null)
 			{
-				return "Uniprot:" + id.substring(id.lastIndexOf("/") + 1);
+				String id = ele.getRDFId();
+				if (id.contains("uniprot"))
+				{
+					return "Uniprot:" + id.substring(id.lastIndexOf("/") + 1);
+				}
 			}
 		}
 		return null;
