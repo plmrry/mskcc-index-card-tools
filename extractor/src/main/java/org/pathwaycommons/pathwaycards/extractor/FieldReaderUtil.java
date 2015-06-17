@@ -190,15 +190,18 @@ public class FieldReaderUtil
 
 	public static String getUniProtID(BioPAXElement ele)
 	{
-		if (ele instanceof Protein)
+		if(ele!=null)
 		{
-			ele = ((Protein) ele).getEntityReference();
-		}
+			if (ele instanceof Protein)
+			{
+				ele = ((Protein) ele).getEntityReference();
+			}
 
-		String id = ele.getRDFId();
-		if (id.contains("uniprot"))
-		{
-			return "Uniprot:" + id.substring(id.lastIndexOf("/") + 1);
+			String id = ele.getRDFId();
+			if (id.contains("uniprot"))
+			{
+				return "Uniprot:" + id.substring(id.lastIndexOf("/") + 1);
+			}
 		}
 		return null;
 	}

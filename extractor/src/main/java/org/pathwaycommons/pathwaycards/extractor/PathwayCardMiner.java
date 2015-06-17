@@ -14,9 +14,13 @@ import org.biopax.paxtools.pattern.miner.AbstractSIFMiner;
 import org.biopax.paxtools.pattern.miner.SIFEnum;
 import org.biopax.paxtools.pattern.util.Blacklist;
 
-import java.io.*;
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.net.URL;
 import java.util.*;
+import java.util.zip.GZIPInputStream;
 
 /**
  * @author Ozgun Babur
@@ -47,15 +51,15 @@ public class PathwayCardMiner
 
 		SimpleIOHandler io = new SimpleIOHandler();
 
-//		Model model = io.convertFromOWL(new GZIPInputStream(new URL(
-//			"http://www.pathwaycommons.org/pc2/downloads/Pathway%20Commons.7.Reactome.BIOPAX.owl.gz").
-//			openStream()));
+		Model model = io.convertFromOWL(new GZIPInputStream(new URL(
+			"http://www.pathwaycommons.org/pc2/downloads/Pathway%20Commons.7.All.BIOPAX.owl.gz").
+			openStream()));
 //		Model model = io.convertFromOWL(new FileInputStream("/home/ozgun/Documents/Darpa/BigMech/evaluation/ras_1.owl"));
-		Model model = io.convertFromOWL(new FileInputStream("/home/demir/Documents/Ras-2-neighborhood.owl"));
+//		Model model = io.convertFromOWL(new FileInputStream("/home/demir/Documents/Ras-2-neighborhood.owl"));
 
 		mcm.mineAndCollect(model);
 //		mcm.writeResults("/home/ozgun/Documents/Darpa/BigMech/evaluation/Reactome.json");
-		mcm.writeResults("/home/demir/Documents/Ras-2-neighborhood.json");
+		mcm.writeResults("/home/demir/Documents/PCall.json");
 	}
 
 	abstract class AbstractMiner extends AbstractSIFMiner
