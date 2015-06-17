@@ -16,7 +16,7 @@ var IndexCardReader = function()
 	{
 		var cards = [];
 
-		console.log("[" + new Date() + "] started processing input file: " + filename);
+		//console.log("[" + new Date() + "] started processing input file: " + filename);
 
 		var	readStream = fs.createReadStream(filename, {encoding: 'utf8'});
 		var	parser = JSONStream.parse(pattern);
@@ -27,7 +27,7 @@ var IndexCardReader = function()
 		});
 
 		parser.on('end', function() {
-			console.log("[" + new Date() + "] finished processing input file: " + filename);
+			//console.log("[" + new Date() + "] finished processing input file: " + filename);
 
 			if (_.isFunction(callback))
 			{

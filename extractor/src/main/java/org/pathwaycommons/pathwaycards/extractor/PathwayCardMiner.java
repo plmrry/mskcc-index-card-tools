@@ -17,7 +17,6 @@ import org.biopax.paxtools.pattern.util.Blacklist;
 import java.io.*;
 import java.net.URL;
 import java.util.*;
-import java.util.zip.GZIPInputStream;
 
 /**
  * @author Ozgun Babur
@@ -52,11 +51,11 @@ public class PathwayCardMiner
 //			"http://www.pathwaycommons.org/pc2/downloads/Pathway%20Commons.7.Reactome.BIOPAX.owl.gz").
 //			openStream()));
 //		Model model = io.convertFromOWL(new FileInputStream("/home/ozgun/Documents/Darpa/BigMech/evaluation/ras_1.owl"));
-		Model model = io.convertFromOWL(new FileInputStream("C:\\Users\\baburo\\Documents\\Darpa\\BigMech\\Ras-2-neighborhood.owl"));
+		Model model = io.convertFromOWL(new FileInputStream("/home/demir/Documents/Ras-2-neighborhood.owl"));
 
 		mcm.mineAndCollect(model);
 //		mcm.writeResults("/home/ozgun/Documents/Darpa/BigMech/evaluation/Reactome.json");
-		mcm.writeResults("C:\\Users\\baburo\\Documents\\Darpa\\BigMech\\Ras-2-neighborhood.json");
+		mcm.writeResults("/home/demir/Documents/Ras-2-neighborhood.json");
 	}
 
 	abstract class AbstractMiner extends AbstractSIFMiner
@@ -149,7 +148,7 @@ public class PathwayCardMiner
 				String site = null;
 				if (mod.contains("@"))
 				{
-					site = mod.substring(mod.indexOf("@") + 1);
+					site = mod.substring(mod.indexOf("@") + 2 );
 					mod = mod.substring(0, mod.indexOf("@"));
 				}
 				mod = FieldReaderUtil.mapModificationTerm(mod);

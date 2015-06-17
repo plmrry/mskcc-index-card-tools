@@ -45,7 +45,7 @@ public class FieldReaderUtil
 		{
 			SequenceSite ss = (SequenceSite) loc;
 			int pos = ss.getSequencePosition();
-			if (pos > 0) return "@" + pos;
+			if (pos > 0) return ""+pos;
 		}
 		else if (loc instanceof SequenceInterval)
 		{
@@ -58,7 +58,7 @@ public class FieldReaderUtil
 				int e = es.getSequencePosition();
 				if (b > 0 && e > 0)
 				{
-					return "@" + b + "-" + e;
+					return b + "-" + e;
 				}
 			}
 		}
@@ -324,7 +324,7 @@ public class FieldReaderUtil
 
 		// Write simple molecules
 		Map map = new LinkedHashMap();
-		String upn = getUniProtName(er);
+		String upn = getUniProtID(er);
 		String sym = getHGNCSymbol(er);
 		String name = pickAName(er);
 

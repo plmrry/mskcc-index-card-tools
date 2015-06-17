@@ -11,14 +11,19 @@ var IndexCardComparator = function()
 	var POS_RANGE = 1;
 
 
-    var CONFLICTING = "Conflicting";
-    var CORROBORATION = "Corroboration";
-    var EXTENSION = "Extension";
-    var SPECIFICATION = "Specification";
+    var CONFLICTING = "conflicting";
+    var CORROBORATION = "corroboration";
+    var EXTENSION = "extension";
+    var SPECIFICATION = "specification";
 
 	var _paIdMap = {};
 	var _pbIdMap = {};
 	var _allIdMap = {};
+
+	var conf_count =0;
+	var corr_count =0;
+	var spec_count =0;
+
 
 	// helper functions related to interaction types: modification
 	var _modification = {
@@ -304,6 +309,13 @@ var IndexCardComparator = function()
 	            }
             }
         });
+		switch (updatedCard.model_relation)
+		{
+
+			case CORROBORATION: {corr_count++; console.log("corr!");break;}
+			case CONFLICTING: conf_count++; {console.log("conf!"); break;}
+			case SPECIFICATION: spec_count++; {console.log("spec!"); break;}
+		}
     }
 
     function corr_conf(match, base, updatedCard) {
