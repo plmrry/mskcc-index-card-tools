@@ -10,6 +10,7 @@
 	<modelVersion>4.0.0</modelVersion>
 
 	<artifactId>comparator</artifactId>
-
+	<name>Pathway Cards Comparator</name>
+	<description>Index card comparator module</description>
 
 </project>
