@@ -20,10 +20,12 @@ var IndexCardComparator = function()
 	var _pbIdMap = {};
 	var _allIdMap = {};
 
-	var conf_count =0;
-	var corr_count =0;
-	var spec_count =0;
-
+	var _stats = {
+		conflictCount: 0,
+		corroborationCount: 0,
+		specificationCount: 0,
+		extensionCount: 0
+	};
 
 	// helper functions related to interaction types: modification
 	var _modification = {
@@ -252,6 +254,7 @@ var IndexCardComparator = function()
 
             classify(updatedCard);
 			updatedCards.push(updatedCard);
+			updateStats(updatedCard);
 		});
 
 		return updatedCards;
@@ -309,14 +312,32 @@ var IndexCardComparator = function()
 	            }
             }
         });
-		switch (updatedCard.model_relation)
-		{
 
-			case CORROBORATION: {corr_count++; console.log("corr!");break;}
-			case CONFLICTING: conf_count++; {console.log("conf!"); break;}
-			case SPECIFICATION: spec_count++; {console.log("spec!"); break;}
-		}
+	    return updatedCard;
     }
+
+	function updateStats(indexCard)
+	{
+		switch (indexCard.model_relation)
+		{
+			case CORROBORATION: {
+				_stats.corroborationCount++;
+				break;
+			}
+			case CONFLICTING: {
+				_stats.conflictCount++;
+				break;
+			}
+			case SPECIFICATION: {
+				_stats.specificationCount++;
+				break;
+			}
+			case EXTENSION: {
+				_stats.extensionCount++;
+				break;
+			}
+		}
+	}
 
     function corr_conf(match, base, updatedCard) {
         if (!match.potentialConflict) {
@@ -973,9 +994,15 @@ var IndexCardComparator = function()
 		return indexCard["extracted_information"]["interaction_type"];
 	}
 
+	function getStats()
+	{
+		return _.extend({}, _stats);
+	}
+
 	// public functions
 	this.compareCards = compareCards;
 	this.loadModel = loadModel;
+	this.getStats = getStats;
 };
 
 module.exports = IndexCardComparator;

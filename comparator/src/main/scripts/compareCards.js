@@ -30,7 +30,7 @@ function main(args)
 				}
 
 				files = filterJson(files);
-				processAllFiles(files, reader, comparator, output);
+				processAllFiles(files, reader, comparator, output, printStats);
 			});
 
 		}
@@ -51,6 +51,8 @@ function main(args)
 					// write to std out
 					console.log(generateOutput(result));
 				}
+
+				printStats(comparator, output);
 			});
 		}
 	});
@@ -86,7 +88,7 @@ function walk(dir, done) {
 	});
 }
 
-function processAllFiles(files, reader, comparator, output)
+function processAllFiles(files, reader, comparator, output, callback)
 {
 	var filename = files.pop();
 
@@ -109,12 +111,28 @@ function processAllFiles(files, reader, comparator, output)
 			console.log(generateOutput(result));
 		}
 
+		// more files to process
 		if (files.length > 0)
 		{
-			processAllFiles(files, reader, comparator, output);
+			processAllFiles(files, reader, comparator, output, callback);
+		}
+		// finished processing all files
+		else
+		{
+			if (_.isFunction(callback))
+			{
+				callback(comparator, output);
+			}
 		}
 	});
 
+}
+
+function printStats(comparator, output)
+{
+	var stats = comparator.getStats();
+	console.log("STATS: ");
+	console.log(JSON.stringify(stats, null, 4));
 }
 
 function filterJson(files)
