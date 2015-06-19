@@ -318,6 +318,7 @@ var IndexCardComparator = function()
 
 	function updateStats(indexCard)
 	{
+		// basic stats: model relation frequency
 		switch (indexCard.model_relation)
 		{
 			case CORROBORATION: {
@@ -337,6 +338,22 @@ var IndexCardComparator = function()
 				break;
 			}
 		}
+
+		// advanced stats: in addition to model relation, score and delta feature
+		// classification (for the best match) are also taken into account
+		var key = indexCard.model_relation + "_" + indexCard.score;
+
+		if (indexCard.best_match != null)
+		{
+			key += "_" + indexCard.best_match.deltaFeature;
+		}
+
+		if (_stats[key] == null)
+		{
+			_stats[key] = 0;
+		}
+
+		_stats[key]++;
 	}
 
     function corr_conf(match, base, updatedCard) {
@@ -383,13 +400,16 @@ var IndexCardComparator = function()
             }
         }
     }
+
     function update(relation, classscore, updatedCard, match) {
         if (updatedCard.score < classscore) {
             updatedCard.model_relation = relation;
             updatedCard.score = classscore;
             updatedCard.model_element = match.model_element;
+	        updatedCard.best_match = match;
         }
     }
+
 	/**
 	 * Retrieves ids related to participant B for the given index card.
 	 *
