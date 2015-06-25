@@ -418,17 +418,18 @@ var IndexCardComparator = function()
 	 */
 	function getPbQueryIds(indexCard)
 	{
-		// TODO currently we ignore complexes and protein families for participant B
-		//var familyMembersFn = null; // TODO define a proper family member retrieval function
-		//var queryIds = extractAllIds(participantB(indexCard), familyMembersFn);
-		var queryIds = [];
+		var familyMembersFn = null; // TODO define a proper family member retrieval function
+		var queryIds = extractAllIds(participantB(indexCard), familyMembersFn);
 
-		var pbId = participantB(indexCard)["identifier"];
-
-		if (pbId != null)
-		{
-			queryIds.push(pbId);
-		}
+		// the code below ignores complexes and protein families for participant B
+		//var queryIds = [];
+		//
+		//var pbId = participantB(indexCard)["identifier"];
+		//
+		//if (pbId != null)
+		//{
+		//	queryIds.push(pbId);
+		//}
 
 		return queryIds;
 	}
@@ -442,10 +443,10 @@ var IndexCardComparator = function()
 	function matchFilter(inferenceCard, modelCard)
 	{
 		return (
-			// TODO looking for strict participant_b id matching for now,
-			// ignoring complexes and family numbers...
+			// TODO looking for exact participant_b id matching for now
 			hasBind(inferenceCard) && hasBind(modelCard) ||
-			(strictPbMatch(inferenceCard, modelCard) &&
+			//(strictPbMatch(inferenceCard, modelCard) &&
+			(exactPbMatch(inferenceCard, modelCard) &&
 			// interaction types should be compatible
 			((hasModification(inferenceCard) && hasModification(modelCard)) ||
 			 (hasIncreaseDecrease(inferenceCard) && hasIncreaseDecrease(modelCard)) ||
@@ -455,16 +456,39 @@ var IndexCardComparator = function()
 	}
 
 	/**
-	 * Checks for exact matching participantBs in given index cards.
+	 * Checks for strict matching participantBs in given index cards.
+	 * This match ignores complexes and family members.
 	 *
 	 * @param inferenceCard
 	 * @param modelCard
-	 * @returns {boolean} true if exact match, false otherwise
+	 * @returns {boolean} true if strict match, false otherwise
 	 */
 	function strictPbMatch(inferenceCard, modelCard)
 	{
 		return participantB(inferenceCard)["identifier"] != null &&
 		       (participantB(modelCard)["identifier"] === participantB(inferenceCard)["identifier"]);
+	}
+
+	/**
+	 * Checks for exact matching participantBs in given index cards.
+	 * This match includes complexes and family members.
+	 *
+	 * @param inferenceCard
+	 * @param modelCard
+	 * @returns {boolean} true if exact match, false otherwise
+	 */
+	function exactPbMatch(inferenceCard, modelCard)
+	{
+		var inferenceCardPbIds = extractAllIds(participantB(inferenceCard));
+		var modelCardPbIds = extractAllIds(participantB(modelCard));
+
+		var result = compare(inferenceCardPbIds,
+		                     modelCardPbIds,
+		                     _participantId.strongEquality,
+		                     _participantId.weakEquality,
+		                     _participantId.weakDiff);
+
+		return (result == EXACT);
 	}
 
 	/**
