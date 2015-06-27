@@ -14,6 +14,9 @@ public class FieldReaderUtil
 	private static PathAccessor MODIFS = new PathAccessor(
 		"PhysicalEntity/feature:ModificationFeature/modificationType/term");
 
+	static Set<BioPAXElement> ungrounded = new HashSet<>();
+	static Set<BioPAXElement> grounded = new HashSet<>();
+
 	/**
 	 * Reads differential activity labels (active and inactive) of two physical entities. These
 	 * labels are used by NCI PID
@@ -244,6 +247,28 @@ public class FieldReaderUtil
 		return "null";
 	}
 
+	public static boolean isGrounded(Object jsonObj)
+	{
+		if (jsonObj instanceof List)
+		{
+			for (Object o : (List) jsonObj)
+			{
+				if (isGrounded(o)) return true;
+			}
+		}
+		else if (jsonObj instanceof Map)
+		{
+			Map map = (Map) jsonObj;
+			if (map.containsKey("identifier"))
+				return true;
+			else if (map.containsKey("family_members"))
+			{
+				if (isGrounded(map.get("family_members"))) return true;
+			}
+		}
+		return false;
+	}
+
 	public static Object convertToJASON(PhysicalEntity pe)
 	{
 		// Write generics
@@ -261,6 +286,25 @@ public class FieldReaderUtil
 			}
 
 			return map;
+		}
+		else if (pe instanceof SimplePhysicalEntity)
+		{
+			EntityReference er = ((SimplePhysicalEntity) pe).getEntityReference();
+			if (er != null && !er.getMemberEntityReference().isEmpty())
+			{
+				Map map = new LinkedHashMap();
+				map.put("entity_type", "protein_family");
+				map.put("entity_text", pickAName(pe));
+				List list = new ArrayList();
+				map.put("family_members", list);
+
+				for (EntityReference mem : er.getMemberEntityReference())
+				{
+					list.add(convertToJASON(mem));
+				}
+
+				return map;
+			}
 		}
 
 		// Write complexes
@@ -297,7 +341,12 @@ public class FieldReaderUtil
 
 		map.put("entity_type", type);
 		map.put("entity_text", name);
-		if (upn != null || sym != null) map.put("identifier", upn != null ? upn : sym);
+		if (upn != null || sym != null)
+		{
+			map.put("identifier", upn != null ? upn : sym);
+			grounded.add(pe);
+		}
+		else ungrounded.add(pe);
 
 		List featList = readFeatures(pe);
 		List negFeatList = readNegativeFeatures(pe);
