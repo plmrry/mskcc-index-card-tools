@@ -14,9 +14,22 @@ function main(args)
 	var reader = new IndexCardReader();
 	var comparator = new IndexCardComparator();
 
-	// read model data from the model input file
-	// (in order to properly read an array of data we need "*" as pattern)
-	reader.readCards(modelFile, "*", function (modelData)
+	var modelPattern;
+
+	if(reader.isJSONArray(modelFile))
+	{
+		// in order to properly read an array of data we need "*" as pattern
+		// (assuming the data file contains a single JSON array)
+		modelPattern = "*";
+	}
+	else
+	{
+		// in order to read a single JSON object we need "null" pattern
+		modelPattern = null;
+	}
+
+	// read model data from the model input file.
+	reader.readCards(modelFile, modelPattern, function (modelData)
 	{
 		comparator.loadModel(modelData);
 
@@ -37,7 +50,15 @@ function main(args)
 		// else assume that input fragment file contains an array of JSON object
 		else
 		{
-			reader.readCards(fragment, "*", function (inferenceData)
+			var fragmentPattern = null;
+
+			if(reader.isJSONArray(fragment))
+			{
+				// in order to properly read an array of data we need "*" as pattern
+				fragmentPattern = "*";
+			}
+
+			reader.readCards(fragment, fragmentPattern, function (inferenceData)
 			{
 				var result = comparator.compareCards(inferenceData);
 
@@ -92,8 +113,14 @@ function processAllFiles(files, reader, comparator, output, callback)
 {
 	var filename = files.pop();
 
-	// in order to read a single JSON object we need "null" pattern
-	reader.readCards(filename, null, function (inferenceData)
+	var pattern = null;
+
+	if (reader.isJSONArray(filename))
+	{
+		pattern = "*";
+	}
+
+	reader.readCards(filename, pattern, function (inferenceData)
 	{
 		var result = comparator.compareCards(inferenceData);
 

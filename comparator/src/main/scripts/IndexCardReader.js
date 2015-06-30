@@ -16,7 +16,7 @@ var IndexCardReader = function()
 	{
 		var cards = [];
 
-		//console.log("[" + new Date() + "] started processing input file: " + filename);
+		console.log("[" + new Date() + "] started processing input file: " + filename);
 
 		var	readStream = fs.createReadStream(filename, {encoding: 'utf8'});
 		var	parser = JSONStream.parse(pattern);
@@ -27,7 +27,7 @@ var IndexCardReader = function()
 		});
 
 		parser.on('end', function() {
-			//console.log("[" + new Date() + "] finished processing input file: " + filename);
+			console.log("[" + new Date() + "] finished processing input file: " + filename);
 
 			if (_.isFunction(callback))
 			{
@@ -36,7 +36,37 @@ var IndexCardReader = function()
 		});
 	}
 
+	function isJSONArray(filename)
+	{
+		var done = false;
+		var firstChar = null;
+		var bufLen = 100;
+		var fd = fs.openSync(filename, 'r');
+
+		while (!done)
+		{
+			var buffer = new Buffer(bufLen);
+			fs.readSync(fd, buffer, 0, bufLen);
+
+			var data = buffer.toString();
+
+			if (data.trim().length > 0)
+			{
+				done = true;
+				firstChar = data.trim()[0];
+			}
+		}
+
+		fs.closeSync(fd);
+
+		if (firstChar == "[")
+		{
+			return true;
+		}
+	}
+
 	this.readCards = readCards;
+	this.isJSONArray = isJSONArray;
 };
 
 module.exports = IndexCardReader;
