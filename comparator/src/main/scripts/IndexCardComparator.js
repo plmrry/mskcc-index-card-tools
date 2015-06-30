@@ -1,4 +1,5 @@
 var _ = require('underscore');
+var IndexCardUtils = require('./IndexCardUtils.js');
 
 var IndexCardComparator = function()
 {
@@ -205,10 +206,10 @@ var IndexCardComparator = function()
 	{
 		// process pc cards to generate maps
 		_.each(modelCards, function(modelCard, idx) {
-			updateIdMap(_paIdMap, participantA(modelCard), modelCard);
-			updateIdMap(_pbIdMap, participantB(modelCard), modelCard);
-			updateIdMap(_allIdMap, participantA(modelCard), modelCard);
-			updateIdMap(_allIdMap, participantB(modelCard), modelCard);
+			updateIdMap(_paIdMap, IndexCardUtils.participantA(modelCard), modelCard);
+			updateIdMap(_pbIdMap, IndexCardUtils.participantB(modelCard), modelCard);
+			updateIdMap(_allIdMap, IndexCardUtils.participantA(modelCard), modelCard);
+			updateIdMap(_allIdMap, IndexCardUtils.participantB(modelCard), modelCard);
 		});
 	}
 
@@ -234,11 +235,11 @@ var IndexCardComparator = function()
 			var matchingCards;
 
 			// "binds" should be handled separately
-			if (hasBind(inferenceCard))
+			if (IndexCardUtils.hasBind(inferenceCard))
 			{
 				// find matching cards for both participants
-				queryIds = _.uniq(extractAllIds(participantA(inferenceCard)).concat(
-					extractAllIds(participantB(inferenceCard))));
+				queryIds = _.uniq(IndexCardUtils.extractAllIds(IndexCardUtils.participantA(inferenceCard)).concat(
+					IndexCardUtils.extractAllIds(IndexCardUtils.participantB(inferenceCard))));
 
 				matchingCards = findMatchingCards(queryIds, inferenceCard, _allIdMap, matchFilter);
 			}
@@ -265,7 +266,7 @@ var IndexCardComparator = function()
         updatedCard.model_relation = EXTENSION; //Assume no good match by default
         _.each(updatedCard.match, function (match) {
 	        // if not binds
-            if (interactionType(updatedCard).toLowerCase().indexOf("binds") == -1)
+            if (IndexCardUtils.interactionType(updatedCard).toLowerCase().indexOf("binds") == -1)
             {
 	            //Exact matches
 	            switch (match.deltaFeature)
@@ -419,12 +420,12 @@ var IndexCardComparator = function()
 	function getPbQueryIds(indexCard)
 	{
 		var familyMembersFn = null; // TODO define a proper family member retrieval function
-		var queryIds = extractAllIds(participantB(indexCard), familyMembersFn);
+		var queryIds = IndexCardUtils.extractAllIds(IndexCardUtils.participantB(indexCard), familyMembersFn);
 
 		// the code below ignores complexes and protein families for participant B
 		//var queryIds = [];
 		//
-		//var pbId = participantB(indexCard)["identifier"];
+		//var pbId = IndexCardUtils.participantB(indexCard)["identifier"];
 		//
 		//if (pbId != null)
 		//{
@@ -444,14 +445,14 @@ var IndexCardComparator = function()
 	{
 		return (
 			// TODO looking for exact participant_b id matching for now
-			hasBind(inferenceCard) && hasBind(modelCard) ||
+			IndexCardUtils.hasBind(inferenceCard) && IndexCardUtils.hasBind(modelCard) ||
 			//(strictPbMatch(inferenceCard, modelCard) &&
 			(exactPbMatch(inferenceCard, modelCard) &&
 			// interaction types should be compatible
-			((hasModification(inferenceCard) && hasModification(modelCard)) ||
-			 (hasIncreaseDecrease(inferenceCard) && hasIncreaseDecrease(modelCard)) ||
-			 (hasActivity(inferenceCard) && hasActivity(modelCard)) ||
-			 (hasTranslocation(inferenceCard) && hasTranslocation(modelCard))))
+			((IndexCardUtils.hasModification(inferenceCard) && IndexCardUtils.hasModification(modelCard)) ||
+			 (IndexCardUtils.hasIncreaseDecrease(inferenceCard) && IndexCardUtils.hasIncreaseDecrease(modelCard)) ||
+			 (IndexCardUtils.hasActivity(inferenceCard) && IndexCardUtils.hasActivity(modelCard)) ||
+			 (IndexCardUtils.hasTranslocation(inferenceCard) && IndexCardUtils.hasTranslocation(modelCard))))
 		);
 	}
 
@@ -465,8 +466,8 @@ var IndexCardComparator = function()
 	 */
 	function strictPbMatch(inferenceCard, modelCard)
 	{
-		return participantB(inferenceCard)["identifier"] != null &&
-		       (participantB(modelCard)["identifier"] === participantB(inferenceCard)["identifier"]);
+		return IndexCardUtils.participantB(inferenceCard)["identifier"] != null &&
+		       (IndexCardUtils.participantB(modelCard)["identifier"] === IndexCardUtils.participantB(inferenceCard)["identifier"]);
 	}
 
 	/**
@@ -479,8 +480,8 @@ var IndexCardComparator = function()
 	 */
 	function exactPbMatch(inferenceCard, modelCard)
 	{
-		var inferenceCardPbIds = extractAllIds(participantB(inferenceCard));
-		var modelCardPbIds = extractAllIds(participantB(modelCard));
+		var inferenceCardPbIds = IndexCardUtils.extractAllIds(IndexCardUtils.participantB(inferenceCard));
+		var modelCardPbIds = IndexCardUtils.extractAllIds(IndexCardUtils.participantB(modelCard));
 
 		var result = compare(inferenceCardPbIds,
 		                     modelCardPbIds,
@@ -512,23 +513,23 @@ var IndexCardComparator = function()
 
 		// determine model relation wrt interaction type
 
-		if (hasModification(indexCard))
+		if (IndexCardUtils.hasModification(indexCard))
 		{
 			compareModification(indexCard, matchingCards)
 		}
-		else if (hasTranslocation(indexCard))
+		else if (IndexCardUtils.hasTranslocation(indexCard))
 		{
 			compareTranslocation(indexCard, matchingCards);
 		}
-		else if (hasBind(indexCard))
+		else if (IndexCardUtils.hasBind(indexCard))
 		{
 			compareBind(indexCard, matchingCards);
 		}
-		else if (hasIncreaseDecrease(indexCard))
+		else if (IndexCardUtils.hasIncreaseDecrease(indexCard))
 		{
 			compareInteractionType(indexCard, matchingCards);
 		}
-		else if (hasActivity(indexCard))
+		else if (IndexCardUtils.hasActivity(indexCard))
 		{
 			compareInteractionType(indexCard, matchingCards);
 		}
@@ -543,7 +544,7 @@ var IndexCardComparator = function()
 				delete indexCard["match"];
 			}
 			// we have matching participant B(s), now compare participant A(s)
-			else if (!hasBind(indexCard))
+			else if (!IndexCardUtils.hasBind(indexCard))
 			{
 				compareParticipantA(indexCard, matchingCards);
 			}
@@ -558,7 +559,7 @@ var IndexCardComparator = function()
 			var result = DISTINCT;
 			var conflict = false;
 
-			if (interactionType(indexCard).toLocaleLowerCase() == interactionType(card).toLowerCase())
+			if (IndexCardUtils.interactionType(indexCard).toLocaleLowerCase() == IndexCardUtils.interactionType(card).toLowerCase())
 			{
 				result = EXACT;
 			}
@@ -575,11 +576,11 @@ var IndexCardComparator = function()
 
 	function compareParticipantA(indexCard, matchingCards)
 	{
-		var indexCardPaIds = extractAllIds(participantA(indexCard));
+		var indexCardPaIds = IndexCardUtils.extractAllIds(IndexCardUtils.participantA(indexCard));
 
 		_.each(indexCard["match"], function(ele, idx){
 			var card = ele.card;
-			var matchedCardPaIds = extractAllIds(participantA(card));
+			var matchedCardPaIds = IndexCardUtils.extractAllIds(IndexCardUtils.participantA(card));
 
 			var result = compare(indexCardPaIds,
 			                     matchedCardPaIds,
@@ -593,14 +594,14 @@ var IndexCardComparator = function()
 
 	function compareBind(indexCard, matchingCards)
 	{
-		var indexCardIds = _.uniq(extractAllIds(participantA(indexCard)).concat(
-			extractAllIds(participantB(indexCard))));
+		var indexCardIds = _.uniq(IndexCardUtils.extractAllIds(IndexCardUtils.participantA(indexCard)).concat(
+			IndexCardUtils.extractAllIds(IndexCardUtils.participantB(indexCard))));
 
 		_.each(matchingCards, function(card, idx){
-			if (hasBind(card))
+			if (IndexCardUtils.hasBind(card))
 			{
-				var matchedCardIds = _.uniq(extractAllIds(participantA(card)).concat(
-					extractAllIds(participantB(card))));
+				var matchedCardIds = _.uniq(IndexCardUtils.extractAllIds(IndexCardUtils.participantA(card)).concat(
+					IndexCardUtils.extractAllIds(IndexCardUtils.participantB(card))));
 
 				var result = compare(indexCardIds,
 				                     matchedCardIds,
@@ -627,8 +628,8 @@ var IndexCardComparator = function()
 	 */
 	function isOppositeInteractions(indexCard, matchingCard)
 	{
-		var interaction = interactionType(indexCard).toLowerCase();
-		var matchingInteraction = interactionType(matchingCard).toLowerCase();
+		var interaction = IndexCardUtils.interactionType(indexCard).toLowerCase();
+		var matchingInteraction = IndexCardUtils.interactionType(matchingCard).toLowerCase();
 
 		return (interaction == "adds_modification" && matchingInteraction == "removes_modification") ||
 			(interaction == "removes_modification" && matchingInteraction == "adds_modification") ||
@@ -640,17 +641,17 @@ var IndexCardComparator = function()
 
 	function compareModification(indexCard, matchingCards)
 	{
-		var modifications = getModifications(indexCard);
+		var modifications = IndexCardUtils.getModifications(indexCard);
 
 		// determine the model relation by comparing modifications
 
 		// for each matching card compare modifications with the modifications of
 		// the inference card and update the match field
 		_.each(matchingCards, function(card, idx) {
-			if (hasModification(card))
+			if (IndexCardUtils.hasModification(card))
 			{
 				var result = compare(modifications,
-				                     getModifications(card),
+				                     IndexCardUtils.getModifications(card),
 				                     _modification.strongEquality,
 				                     _modification.weakEquality,
 				                     _modification.weakDiff);
@@ -670,15 +671,15 @@ var IndexCardComparator = function()
 
 	function compareTranslocation(indexCard, matchingCards)
 	{
-		var translocation = getTranslocation(indexCard);
+		var translocation = IndexCardUtils.getTranslocation(indexCard);
 
 		// for each matching card compare modifications with the modifications of
 		// the inference card and update the match field
 		_.each(matchingCards, function(card, idx) {
-			if (hasTranslocation(card))
+			if (IndexCardUtils.hasTranslocation(card))
 			{
 				var result = compare([translocation],
-				                     [getTranslocation(card)],
+				                     [IndexCardUtils.getTranslocation(card)],
 				                     _translocation.strongEquality,
 				                     _translocation.weakEquality,
 				                     _translocation.weakDiff);
@@ -690,10 +691,10 @@ var IndexCardComparator = function()
 				{
 					conflict = translocation.to &&
 					           translocation.from &&
-					           getTranslocation(indexCard).from &&
-					           getTranslocation(indexCard).to &&
-					           (translocation.to.toLowerCase() == getTranslocation(indexCard).from.toLowerCase() &&
-					            translocation.from.toLowerCase() == getTranslocation(indexCard).to.toLowerCase());
+					           IndexCardUtils.getTranslocation(indexCard).from &&
+					           IndexCardUtils.getTranslocation(indexCard).to &&
+					           (translocation.to.toLowerCase() == IndexCardUtils.getTranslocation(indexCard).from.toLowerCase() &&
+					            translocation.from.toLowerCase() == IndexCardUtils.getTranslocation(indexCard).to.toLowerCase());
 				}
 
 				indexCard["match"].push({deltaFeature: result, potentialConflict: conflict, card: card});
@@ -755,8 +756,8 @@ var IndexCardComparator = function()
 		// if no weak eq function is provided, use strong eq functions
 		weakEqualityFn = weakEqualityFn || strongEqualityFn;
 
-		var strongIntersection = intersect(inferenceSet, modelSet, strongEqualityFn);
-		var weakIntersection = intersect(inferenceSet, modelSet, weakEqualityFn);
+		var strongIntersection = IndexCardUtils.intersect(inferenceSet, modelSet, strongEqualityFn);
+		var weakIntersection = IndexCardUtils.intersect(inferenceSet, modelSet, weakEqualityFn);
 		// difference of inference set from model set
 		var inferenceDiffModel = difference(inferenceSet, modelSet, diffFn);
 		// difference of model set from inference set
@@ -809,29 +810,6 @@ var IndexCardComparator = function()
 		return INTERSECT;
 	}
 
-	function intersect(setA, setB, equalityFn)
-	{
-		equalityFn = equalityFn || function(a, b) {
-			return a === b;
-		};
-
-		var intersection = [];
-
-		for (var i=0; i < setA.length; i++)
-		{
-			for (var j=0; j < setB.length; j++)
-			{
-				if (equalityFn(setA[i], setB[j]))
-				{
-					intersection.push(setA[i]);
-					break;
-				}
-			}
-		}
-
-		return intersection;
-	}
-
 	/**
 	 * Finds the difference between two sets wrt to
 	 * the given difference criteria as a function
@@ -869,50 +847,6 @@ var IndexCardComparator = function()
 		}
 
 		return difference;
-	}
-
-	function hasTranslocation(indexCard)
-	{
-		return interactionType(indexCard).toLowerCase() == "translocation" &&
-			(indexCard["extracted_information"]["from_location"] != null ||
-			indexCard["extracted_information"]["to_location"] != null ||
-			indexCard["from_location"] != null ||
-			indexCard["to_location"] != null);
-	}
-
-	function hasModification(indexCard)
-	{
-		return (getModifications(indexCard) != null) &&
-		       (getModifications(indexCard).length > 0);
-	}
-
-	function hasIncreaseDecrease(indexCard)
-	{
-		return interactionType(indexCard).toLowerCase() == "decrease" ||
-		       interactionType(indexCard).toLowerCase() == "increase";
-	}
-
-	function hasActivity(indexCard)
-	{
-		return interactionType(indexCard).toLowerCase().indexOf("activity") != -1;
-	}
-
-	function hasBind(indexCard)
-	{
-		return interactionType(indexCard).toLowerCase().indexOf("binds") != -1;
-	}
-
-	function getModifications(indexCard)
-	{
-		return indexCard["extracted_information"]["modifications"];
-	}
-
-	function getTranslocation(indexCard)
-	{
-		return {
-			from: indexCard["extracted_information"]["from_location"] || indexCard["from_location"],
-			to: indexCard["extracted_information"]["to_location"] || indexCard["to_location"]
-		};
 	}
 
 	/**
@@ -953,7 +887,7 @@ var IndexCardComparator = function()
 	 */
 	function updateIdMap(idMap, participant, indexCard)
 	{
-		var ids = extractAllIds(participant);
+		var ids = IndexCardUtils.extractAllIds(participant);
 
 		_.each(ids, function(id, idx) {
 			if (id != null)
@@ -966,76 +900,6 @@ var IndexCardComparator = function()
 				idMap[id].push(indexCard);
 			}
 		});
-	}
-
-	/**
-	 * Extracts recursively all possible ids from the given participant.
-	 *
-	 * @param participant     a participant (simple, complex or family member)
-	 * @param familyMembersFn optional function to retrieve the family members
-	 * @returns {Array}       extracted ids as an array
-	 */
-	function extractAllIds(participant, familyMembersFn)
-	{
-		// set a default family member extraction function if none provided
-		familyMembersFn = familyMembersFn || function(participant) {
-			return participant["family_members"];
-		};
-
-		var ids = [];
-
-		// participant is null, return empty set...
-		if (!participant)
-		{
-			return ids;
-		}
-
-		var familyMembers = familyMembersFn(participant);
-
-		// if participant is an array then it is a complex
-		if (_.isArray(participant))
-		{
-			_.each(participant, function(ele, idx) {
-				ids = ids.concat(extractAllIds(ele, familyMembersFn));
-			});
-		}
-		// if entity type is protein family,
-		// then we need to use family_members array
-		else if (participant["entity_type"] == "protein_family" &&
-		         familyMembers != null)
-		{
-			_.each(familyMembers, function(ele, idx) {
-				ids = ids.concat(extractAllIds(ele, familyMembersFn));
-			});
-		}
-		// else it is a simple participant
-		else
-		{
-			var id = participant["identifier"];
-
-			// if the identifier field exists
-			if (id != null)
-			{
-				ids.push(id);
-			}
-		}
-
-		return _.uniq(ids);
-	}
-
-	function participantA(indexCard)
-	{
-		return indexCard["extracted_information"]["participant_a"];
-	}
-
-	function participantB(indexCard)
-	{
-		return indexCard["extracted_information"]["participant_b"];
-	}
-
-	function interactionType(indexCard)
-	{
-		return indexCard["extracted_information"]["interaction_type"];
 	}
 
 	function getStats()
