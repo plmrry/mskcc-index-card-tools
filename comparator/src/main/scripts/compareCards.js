@@ -4,6 +4,7 @@ var _ = require('underscore');
 
 var IndexCardComparator = require('./IndexCardComparator.js');
 var IndexCardReader = require('./IndexCardReader.js');
+var FileUtils = require('./FileUtils.js');
 
 function main(args)
 {
@@ -36,18 +37,16 @@ function main(args)
 		// if fragment input is a directory, process each file separately
 		if (fs.lstatSync(fragment).isDirectory())
 		{
-			walk(fragment, function(err, files) {
+			FileUtils.walkDir(fragment, function(err, files) {
 				if (err)
 				{
 					throw err;
 				}
 
-				files = filterJson(files);
+				files = FileUtils.filterJson(files);
 				processAllFiles(files, reader, comparator, output, printStats);
 			});
-
 		}
-		// else assume that input fragment file contains an array of JSON object
 		else
 		{
 			var fragmentPattern = null;
@@ -76,36 +75,6 @@ function main(args)
 				printStats(comparator, output);
 			});
 		}
-	});
-}
-
-/**
- * Recursive traversal of the target directory.
- * see http://stackoverflow.com/questions/5827612/node-js-fs-readdir-recursive-directory-search
- *
- * @param dir   target dir
- * @param done  callback function
- */
-function walk(dir, done) {
-	var results = [];
-	fs.readdir(dir, function(err, list) {
-		if (err) return done(err);
-		var pending = list.length;
-		if (!pending) return done(null, results);
-		list.forEach(function(file) {
-			file = dir + '/' + file;
-			fs.stat(file, function(err, stat) {
-				if (stat && stat.isDirectory()) {
-					walk(file, function(err, res) {
-						results = results.concat(res);
-						if (!--pending) done(null, results);
-					});
-				} else {
-					results.push(file);
-					if (!--pending) done(null, results);
-				}
-			});
-		});
 	});
 }
 
@@ -152,7 +121,6 @@ function processAllFiles(files, reader, comparator, output, callback)
 			}
 		}
 	});
-
 }
 
 function printStats(comparator, output)
@@ -160,21 +128,6 @@ function printStats(comparator, output)
 	var stats = comparator.getStats();
 	console.log("STATS: ");
 	console.log(JSON.stringify(stats, null, 4));
-}
-
-function filterJson(files)
-{
-	var jsons = [];
-
-	_.each(files, function(filename, idx) {
-		if (filename.toLowerCase().indexOf(".json") != -1 &&
-		    filename.toLowerCase().indexOf("_mskcc") == -1)
-		{
-			jsons.push(filename)
-		}
-	});
-
-	return jsons;
 }
 
 function generateOutput(json)
