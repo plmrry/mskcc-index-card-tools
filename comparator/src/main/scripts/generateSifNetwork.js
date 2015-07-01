@@ -16,7 +16,10 @@ function main(args)
 
 	// clear the output content first
 	// this is because we use the append function later (not write)
-	fs.truncateSync(output);
+	if (fs.existsSync(output))
+	{
+		fs.truncateSync(output);
+	}
 
 	var converter = new SifConverter(mapping);
 
@@ -29,7 +32,13 @@ function main(args)
 			}
 
 			files = FileUtils.filterJson(files);
-			processAllFiles(files, reader, converter, output);
+
+			processAllFiles(files, reader, converter, output, function(converter, output) {
+				_.each(converter.network(), function(sif, idx) {
+					// write to output file
+					fs.appendFileSync(output, sif + "\n");
+				});
+			});
 		});
 	}
 	else
@@ -44,14 +53,14 @@ function main(args)
 
 		// read data from the input file
 		reader.readCards(input, pattern, function (data) {
-			// TODO remove duplicates
 			_.each(data, function(indexCard, idx) {
 				var sifNetwork = converter.convertToSif(indexCard);
+				converter.updateNetwork(sifNetwork);
+			});
 
-				_.each(sifNetwork, function(sif, idx) {
-					// write to output file
-					fs.appendFileSync(output, sif + "\n");
-				});
+			_.each(converter.network(), function(sif, idx) {
+				// write to output file
+				fs.appendFileSync(output, sif + "\n");
 			});
 		});
 	}
@@ -73,11 +82,7 @@ function processAllFiles(files, reader, converter, output, callback)
 	{
 		_.each(data, function(indexCard, idx) {
 			var sifNetwork = converter.convertToSif(indexCard);
-
-			_.each(sifNetwork, function(sif, idx) {
-				// write to output file
-				fs.appendFileSync(output, sif + "\n");
-			});
+			converter.updateNetwork(sifNetwork);
 		});
 
 		// more files to process

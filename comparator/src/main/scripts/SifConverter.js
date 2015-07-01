@@ -1,10 +1,12 @@
 var _ = require('underscore');
+var fs = require('fs');
 
 var IndexCardUtils = require('./IndexCardUtils.js');
 
 var SifConverter = function(mappingFile)
 {
 	var _hgncMap = buildHgncMap(mappingFile);
+	var _network = {};
 
 	/**
 	 *
@@ -28,12 +30,19 @@ var SifConverter = function(mappingFile)
 			interaction = "in-complex-with";
 		}
 
-		// TODO uniprot -> HGNC symbol
-		// TODO skip ungrounded
-
 		_.each(aIds, function(aId, idx) {
 			_.each(bIds, function(bId, idx) {
-				network.push(aId + "\t" + interaction + "\t" + bId);
+				// skip ungrounded and non mapped
+				var aHgnc = _hgncMap[normalizeId(aId)];
+				var bHgnc = _hgncMap[normalizeId(bId)];
+
+				if (isValidId(aId) &&
+				    isValidId(bId) &&
+				    isValidId(aHgnc) &&
+				    isValidId(bHgnc))
+				{
+					network.push(aHgnc + "\t" + interaction + "\t" + bHgnc);
+				}
 			});
 		});
 
@@ -42,11 +51,72 @@ var SifConverter = function(mappingFile)
 
 	function buildHgncMap(filename)
 	{
-		// TODO build the map
-		return {};
+		var content = fs.readFileSync(filename).toString();
+		var map = {};
+
+		if (content && content.length > 0)
+		{
+			var lines = content.split("\n");
+
+			_.each(lines, function(line, idx) {
+				if (line && line.length > 0)
+				{
+					var parts = line.split("\t");
+
+					var hgncSymbol = parts[0];
+					var synonyms = parts[1];
+					var uniprotId = parts[2];
+
+					map[uniprotId.toLowerCase()] = hgncSymbol;
+				}
+			});
+		}
+
+		return map;
 	}
 
+	function isValidId(id)
+	{
+		return (id &&
+		        id.length > 0 &&
+		        id.toLowerCase() != "ungrounded");
+	}
+
+	function normalizeId(id)
+	{
+		if (!id)
+		{
+			return id;
+		}
+
+		var parts = id.toLowerCase().split(":");
+
+		if (parts.length > 1)
+		{
+			return parts[1];
+		}
+		else
+		{
+			return id.toLowerCase();
+		}
+	}
+
+	function updateNetwork(sifNetwork)
+	{
+		_.each(sifNetwork, function(sif, idx) {
+			// update network
+			_network[sif] = sif;
+		});
+	}
+
+	function network()
+	{
+		return _.values(_network);
+	}
+
+	this.updateNetwork = updateNetwork;
 	this.convertToSif = convertToSif;
+	this.network = network;
 };
 
 module.exports = SifConverter;
