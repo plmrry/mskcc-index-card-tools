@@ -1,6 +1,7 @@
 var process = require('process');
 var fs = require('fs');
 var _ = require('underscore');
+var minimist = require('minimist');
 
 var IndexCardReader = require('./IndexCardReader.js');
 var SifConverter = require('./SifConverter.js');
@@ -8,9 +9,15 @@ var FileUtils = require('./FileUtils.js');
 
 function main(args)
 {
-	var input = args[0];
-	var output = args[1];
-	var mapping = args[2];
+	var mapping = args["h"] || args["hgnc-mapping"];
+	var input = args["i"] || args["input"];
+	var output = args["o"] || args["output"];
+
+	if (input == null || output == null || mapping == null)
+	{
+		invalidArgs();
+		return 1;
+	}
 
 	var reader = new IndexCardReader();
 
@@ -101,5 +108,19 @@ function processAllFiles(files, reader, converter, output, callback)
 	});
 }
 
+function invalidArgs()
+{
+	console.log("ERROR: Invalid or missing arguments.\n");
+
+	var usage = [];
+
+	usage.push("Index Card SIF Converter Usage:");
+	usage.push('-i, --input <path>:\tPath for the input JSON file or directory.');
+	usage.push('-o, --output <path>:\tPath for the output SIF file.');
+	usage.push('-h, --model <path>:\tPath for the HGNC to Uniprot mapping file.');
+
+	console.log(usage.join("\n"));
+}
+
 // argv[0]: node -- argv[1]: generateSifNetworks.js
-main(process.argv.slice(2));
+main(minimist(process.argv.slice(2)));

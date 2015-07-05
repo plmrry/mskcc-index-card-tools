@@ -1,6 +1,7 @@
 var process = require('process');
 var fs = require('fs');
 var _ = require('underscore');
+var minimist = require('minimist');
 
 var IndexCardComparator = require('./IndexCardComparator.js');
 var IndexCardReader = require('./IndexCardReader.js');
@@ -8,9 +9,16 @@ var FileUtils = require('./FileUtils.js');
 
 function main(args)
 {
-	var modelFile = args[0];
-	var fragment = args[1];
-	var output = args[2];
+	var modelFile = args["m"] || args["model"];
+	var fragment = args["i"] || args["input"];
+	var output = args["o"] || args["output"];
+
+	if (modelFile == null || fragment == null)
+	{
+		// TODO print usage
+		invalidArgs();
+		return 1;
+	}
 
 	var reader = new IndexCardReader();
 	var comparator = new IndexCardComparator();
@@ -94,18 +102,19 @@ function processAllFiles(files, reader, comparator, output, callback)
 		var result = comparator.compareCards(inferenceData);
 
 		// assuming output is a directory too
-		if (output != null)
+		if (output == null)
 		{
-			// TODO ignoring the output dir param for now, and writing the output into input dir
-			//var outputFile = output + "/" + filename.substr(filename.lastIndexOf("/"));
+			// no output dir param, writing the output into input dir with a special suffix
 			var outputFile = filename.substr(0, filename.lastIndexOf(".")) + "_mskcc.json";
-			fs.writeFileSync(outputFile, generateOutput(result));
 		}
 		else
 		{
-			// write to std out
-			console.log(generateOutput(result));
+			// TODO try to construct original input directory structure as well!
+			// write to the specified output
+			var outputFile = output + "/" + filename.substr(filename.lastIndexOf("/"));
 		}
+
+		fs.writeFileSync(outputFile, generateOutput(result));
 
 		// more files to process
 		if (files.length > 0)
@@ -158,5 +167,19 @@ function generateOutput(json)
 	return JSON.stringify(outputJson, null, 4);
 }
 
+function invalidArgs()
+{
+	console.log("ERROR: Invalid or missing arguments.\n");
+
+	var usage = [];
+
+	usage.push("Index Card Comparator Usage:");
+	usage.push('-m, --model <path>:\tPath for the input model file or directory.');
+	usage.push('-i, --input <path>:\tPath for the input fragment file or directory.');
+	usage.push('-o, --output <path>:\tPath for the output file or directory.');
+
+	console.log(usage.join("\n"));
+}
+
 // argv[0]: node -- argv[1]: compareCards.js
-main(process.argv.slice(2));
+main(minimist(process.argv.slice(2)));
