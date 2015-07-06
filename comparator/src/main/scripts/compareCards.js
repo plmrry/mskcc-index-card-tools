@@ -9,11 +9,11 @@ var FileUtils = require('./FileUtils.js');
 
 function main(args)
 {
-	var modelFile = args["m"] || args["model"];
+	var model = args["m"] || args["model"];
 	var fragment = args["i"] || args["input"];
 	var output = args["o"] || args["output"];
 
-	if (modelFile == null || fragment == null)
+	if (model == null || fragment == null)
 	{
 		// TODO print usage
 		invalidArgs();
@@ -23,22 +23,28 @@ function main(args)
 	var reader = new IndexCardReader();
 	var comparator = new IndexCardComparator();
 
-	var modelPattern;
+	var modelFiles;
+	var modelData = [];
 
-	if(reader.isJSONArray(modelFile))
+	if (fs.lstatSync(model).isDirectory())
 	{
-		// in order to properly read an array of data we need "*" as pattern
-		// (assuming the data file contains a single JSON array)
-		modelPattern = "*";
+		FileUtils.walkDir(model, function(err, files) {
+			if (err)
+			{
+				throw err;
+			}
+
+			modelFiles = FileUtils.filterJson(files);
+			processAllModels(modelFiles, reader, modelData, processModelData);
+		});
 	}
 	else
 	{
-		// in order to read a single JSON object we need "null" pattern
-		modelPattern = null;
+		modelFiles = [model];
+		processAllModels(modelFiles, reader, modelData, processModelData);
 	}
 
-	// read model data from the model input file.
-	reader.readCards(modelFile, modelPattern, function (modelData)
+	function processModelData(modelData)
 	{
 		comparator.loadModel(modelData);
 
@@ -52,7 +58,7 @@ function main(args)
 				}
 
 				files = FileUtils.filterJson(files);
-				processAllFiles(files, reader, comparator, output, printStats);
+				processAllFragments(files, reader, comparator, output, printStats);
 			});
 		}
 		else
@@ -83,10 +89,54 @@ function main(args)
 				printStats(comparator, output);
 			});
 		}
+	}
+}
+
+function processAllModels(files, reader, modelData, callback)
+{
+	var filename = files.pop();
+	var pattern;
+
+	if(reader.isJSONArray(filename))
+	{
+		// in order to properly read an array of data we need "*" as pattern
+		// (assuming the data file contains a single JSON array)
+		pattern = "*";
+	}
+	else
+	{
+		// in order to read a single JSON object we need "null" pattern
+		pattern = null;
+	}
+
+	reader.readCards(filename, pattern, function (data) {
+		if (_.isArray(data))
+		{
+			modelData = modelData.concat(data);
+		}
+		else
+		{
+			modelData.push(data);
+		}
+
+
+		// more files to process
+		if (files.length > 0)
+		{
+			processAllModels(files, reader, modelData, callback);
+		}
+		// finished processing all files
+		else
+		{
+			if (_.isFunction(callback))
+			{
+				callback(modelData);
+			}
+		}
 	});
 }
 
-function processAllFiles(files, reader, comparator, output, callback)
+function processAllFragments(files, reader, comparator, output, callback)
 {
 	var filename = files.pop();
 
@@ -119,7 +169,7 @@ function processAllFiles(files, reader, comparator, output, callback)
 		// more files to process
 		if (files.length > 0)
 		{
-			processAllFiles(files, reader, comparator, output, callback);
+			processAllFragments(files, reader, comparator, output, callback);
 		}
 		// finished processing all files
 		else
