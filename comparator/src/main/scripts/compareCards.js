@@ -2,6 +2,7 @@ var process = require('process');
 var fs = require('fs');
 var _ = require('underscore');
 var minimist = require('minimist');
+var JSONStream = require('JSONStream');
 
 var IndexCardComparator = require('./IndexCardComparator.js');
 var IndexCardReader = require('./IndexCardReader.js');
@@ -100,12 +101,12 @@ function main(args)
 				// assuming output is a file
 				if (output != null)
 				{
-					fs.writeFileSync(output, generateOutput(result));
+					generateOutput(output, result);
 				}
 				else
 				{
 					// write to std out
-					console.log(generateOutput(result));
+					generateOutput(process.stdout, result);
 				}
 
 				printStats(comparator, output);
@@ -187,7 +188,7 @@ function processAllFragments(files, reader, comparator, output, callback)
 			outputFile = output + "/" + filename.substr(filename.lastIndexOf("/"));
 		}
 
-		fs.writeFileSync(outputFile, generateOutput(result));
+		generateOutput(outputFile, result);
 
 		// more files to process
 		if (files.length > 0)
@@ -212,7 +213,7 @@ function printStats(comparator, output)
 	console.log(JSON.stringify(stats, null, 4));
 }
 
-function generateOutput(json)
+function generateOutput(output, json)
 {
 	var outputJson = [];
 
@@ -237,7 +238,30 @@ function generateOutput(json)
 		delete outputJson.match;
 	}
 
-	return JSON.stringify(outputJson, null, 4);
+	// TODO move this into IndexCardReader (and rename the class to IndexCardIO)
+	var	writeStream;
+
+	if (output === process.stdout)
+	{
+		writeStream = process.stdout;
+	}
+	else
+	{
+		writeStream = fs.createWriteStream(output, {encoding: 'utf8'});
+	}
+
+	var	stringifier = JSONStream.stringify(false, "\n", false, 4);
+	stringifier.pipe(writeStream);
+	stringifier.write(outputJson);
+
+	// close stream if it is not stdout
+	if (writeStream !== process.stdout)
+	{
+		writeStream.end();
+	}
+
+	// using JSON.stringify for huge JSONs may fail
+	//JSON.stringify(outputJson, null, 4);
 }
 
 function invalidArgs()
