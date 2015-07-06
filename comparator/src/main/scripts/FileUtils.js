@@ -48,8 +48,23 @@ var FileUtils = (function()
 		return jsons;
 	}
 
+	function filterCustom(files, filterFn)
+	{
+		var filtered = [];
+
+		_.each(files, function(filename, idx) {
+			if (filterFn(filename, idx))
+			{
+				filtered.push(filename);
+			}
+		});
+
+		return filtered;
+	}
+
 	return {
 		filterJson: filterJson,
+		filterCustom: filterCustom,
 		walkDir : walk
 	}
 })();

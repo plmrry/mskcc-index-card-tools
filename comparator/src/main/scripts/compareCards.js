@@ -12,6 +12,8 @@ function main(args)
 	var model = args["m"] || args["model"];
 	var fragment = args["i"] || args["input"];
 	var output = args["o"] || args["output"];
+	var modelFilter = args["f"] || args["model-filter"];
+	var fragmentFilter = args["g"] || args["fragment-filter"];
 
 	if (model == null || fragment == null)
 	{
@@ -34,7 +36,18 @@ function main(args)
 				throw err;
 			}
 
+			// by default we only accept files ending with .json
+			// (with the exclusion of a special ending: _mskcc.json)
 			modelFiles = FileUtils.filterJson(files);
+
+			// apply additional filename filters if provided
+			if (modelFilter != null && modelFilter.length > 0)
+			{
+				modelFiles = FileUtils.filterCustom(modelFiles, function(filename) {
+					return filename.match(modelFilter);
+				})
+			}
+
 			processAllModels(modelFiles, reader, modelData, processModelData);
 		});
 	}
@@ -58,6 +71,15 @@ function main(args)
 				}
 
 				files = FileUtils.filterJson(files);
+
+				// apply additional filename filters if provided
+				if (fragmentFilter != null && fragmentFilter.length > 0)
+				{
+					files = FileUtils.filterCustom(files, function(filename) {
+						return filename.match(fragmentFilter);
+					})
+				}
+
 				processAllFragments(files, reader, comparator, output, printStats);
 			});
 		}
@@ -150,18 +172,19 @@ function processAllFragments(files, reader, comparator, output, callback)
 	reader.readCards(filename, pattern, function (inferenceData)
 	{
 		var result = comparator.compareCards(inferenceData);
+		var outputFile;
 
 		// assuming output is a directory too
 		if (output == null)
 		{
 			// no output dir param, writing the output into input dir with a special suffix
-			var outputFile = filename.substr(0, filename.lastIndexOf(".")) + "_mskcc.json";
+			outputFile = filename.substr(0, filename.lastIndexOf(".")) + "_mskcc.json";
 		}
 		else
 		{
 			// TODO try to construct original input directory structure as well!
 			// write to the specified output
-			var outputFile = output + "/" + filename.substr(filename.lastIndexOf("/"));
+			outputFile = output + "/" + filename.substr(filename.lastIndexOf("/"));
 		}
 
 		fs.writeFileSync(outputFile, generateOutput(result));
@@ -227,6 +250,8 @@ function invalidArgs()
 	usage.push('-m, --model <path>:\tPath for the input model file or directory.');
 	usage.push('-i, --input <path>:\tPath for the input fragment file or directory.');
 	usage.push('-o, --output <path>:\tPath for the output file or directory.');
+	usage.push('-f, --model-filter <regexp>:\tOptional filter for model filename.');
+	usage.push('-g, --fragment-filter <regexp>:\tOptional filter for fragment filename.');
 
 	console.log(usage.join("\n"));
 }
