@@ -565,7 +565,7 @@ var IndexCardComparator = function()
 			}
 
 			if (result == DISTINCT &&
-			    isOppositeInteractions(indexCard))
+			    isOppositeInteractions(indexCard, card))
 			{
 				conflict = true;
 			}
