@@ -34,7 +34,7 @@ var IndexCardIO = function(options)
 		});
 
 		parser.on('end', function() {
-			console.log("[" + new Date() + "] finished processing input file: " + filename);
+			console.log("[" + new Date() + "] finished processing input file, number of cards: " + cards.length);
 
 			if (_.isFunction(callback))
 			{

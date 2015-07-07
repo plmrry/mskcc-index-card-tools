@@ -265,6 +265,8 @@ var IndexCardComparator = function()
         updatedCard.score = 0;
         updatedCard.model_relation = EXTENSION; //Assume no good match by default
         _.each(updatedCard.match, function (match) {
+	        match.score = 0;
+
 	        // if not binds
             if (IndexCardUtils.interactionType(updatedCard).toLowerCase().indexOf("binds") == -1)
             {
@@ -403,7 +405,9 @@ var IndexCardComparator = function()
     }
 
     function update(relation, classscore, updatedCard, match) {
-        if (updatedCard.score < classscore) {
+        match.score = classscore;
+
+	    if (updatedCard.score < classscore) {
             updatedCard.model_relation = relation;
             updatedCard.score = classscore;
             updatedCard.model_element = match.model_element;
