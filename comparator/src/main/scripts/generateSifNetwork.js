@@ -3,7 +3,7 @@ var fs = require('fs');
 var _ = require('underscore');
 var minimist = require('minimist');
 
-var IndexCardReader = require('./IndexCardReader.js');
+var IndexCardIO = require('./IndexCardIO.js');
 var SifConverter = require('./SifConverter.js');
 var FileUtils = require('./FileUtils.js');
 
@@ -19,7 +19,7 @@ function main(args)
 		return 1;
 	}
 
-	var reader = new IndexCardReader();
+	var processor = new IndexCardIO();
 
 	// clear the output content first
 	// this is because we use the append function later (not write)
@@ -40,7 +40,7 @@ function main(args)
 
 			files = FileUtils.filterJson(files);
 
-			processAllFiles(files, reader, converter, output, function(converter, output) {
+			processAllFiles(files, processor, converter, output, function(converter, output) {
 				_.each(converter.network(), function(sif, idx) {
 					// write to output file
 					fs.appendFileSync(output, sif + "\n");
@@ -52,14 +52,14 @@ function main(args)
 	{
 		var pattern = null;
 
-		if (reader.isJSONArray(input))
+		if (processor.isJSONArray(input))
 		{
 			// in order to properly read an array of data we need "*" as pattern
 			pattern = "*";
 		}
 
 		// read data from the input file
-		reader.readCards(input, pattern, function (data) {
+		processor.readCards(input, pattern, function (data) {
 			_.each(data, function(indexCard, idx) {
 				var sifNetwork = converter.convertToSif(indexCard);
 				converter.updateNetwork(sifNetwork);

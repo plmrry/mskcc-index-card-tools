@@ -5,7 +5,7 @@ var _ = require('underscore');
 var JSONStream = require('JSONStream');
 var es = require('event-stream');
 
-var IndexCardReader = function(options)
+var IndexCardIO = function(options)
 {
 	var _defaultOpts = {
 		detailedOutput: false
@@ -196,4 +196,4 @@ var IndexCardReader = function(options)
 	this.writeWithStream = writeWithStream;
 };
 
-module.exports = IndexCardReader;
+module.exports = IndexCardIO;

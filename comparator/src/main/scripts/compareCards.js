@@ -2,10 +2,9 @@ var process = require('process');
 var fs = require('fs');
 var _ = require('underscore');
 var minimist = require('minimist');
-var JSONStream = require('JSONStream');
 
 var IndexCardComparator = require('./IndexCardComparator.js');
-var IndexCardReader = require('./IndexCardReader.js');
+var IndexCardIO = require('./IndexCardIO.js');
 var FileUtils = require('./FileUtils.js');
 
 function main(args)
@@ -23,7 +22,7 @@ function main(args)
 		return 1;
 	}
 
-	var processor = new IndexCardReader({detailedOutput: detailedOutput});
+	var processor = new IndexCardIO({detailedOutput: detailedOutput});
 	var comparator = new IndexCardComparator();
 
 	var modelFiles;
