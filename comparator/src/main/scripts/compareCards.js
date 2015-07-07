@@ -216,6 +216,7 @@ function printStats(comparator, output)
 function generateOutput(output, json)
 {
 	var outputJson = [];
+	var match = null;
 
 	if (_.isArray(json))
 	{
@@ -229,6 +230,8 @@ function generateOutput(output, json)
 		if (outputJson.length === 1)
 		{
 			outputJson = outputJson[0];
+			// TODO handle the match array separately for now...
+			match = json[0].match;
 		}
 	}
 	else
@@ -236,10 +239,14 @@ function generateOutput(output, json)
 		outputJson = _.extend({}, json);
 		// remove match array (comment out for debug)
 		delete outputJson.match;
+
+		// TODO handle the match array separately for now...
+		match = json.match;
 	}
 
 	// TODO move this into IndexCardReader (and rename the class to IndexCardIO)
 	var	writeStream;
+	var matchWriteStream = null;
 
 	if (output === process.stdout)
 	{
@@ -248,6 +255,13 @@ function generateOutput(output, json)
 	else
 	{
 		writeStream = fs.createWriteStream(output, {encoding: 'utf8'});
+
+		if (match != null)
+		{
+			matchWriteStream = fs.createWriteStream(
+				output.substr(0, output.lastIndexOf(".")) + "_match.json",
+				{encoding: 'utf8'});
+		}
 	}
 
 	var	stringifier = JSONStream.stringify(false, "\n", false, 4);
@@ -258,6 +272,18 @@ function generateOutput(output, json)
 	if (writeStream !== process.stdout)
 	{
 		writeStream.end();
+	}
+
+	if (matchWriteStream != null)
+	{
+		stringifier = JSONStream.stringify('[\n', ',\n', '\n]\n', 4);
+		stringifier.pipe(matchWriteStream);
+
+		_.each(match, function(indexCard, idx) {
+			stringifier.write(indexCard);
+		});
+
+		matchWriteStream.end();
 	}
 
 	// using JSON.stringify for huge JSONs may fail
