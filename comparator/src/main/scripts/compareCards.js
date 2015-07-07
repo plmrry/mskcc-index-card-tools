@@ -15,15 +15,15 @@ function main(args)
 	var output = args["o"] || args["output"];
 	var modelFilter = args["f"] || args["model-filter"];
 	var fragmentFilter = args["g"] || args["fragment-filter"];
+	var detailedOutput = args["d"] || args["detailed-output"];
 
 	if (model == null || fragment == null)
 	{
-		// TODO print usage
 		invalidArgs();
 		return 1;
 	}
 
-	var reader = new IndexCardReader();
+	var processor = new IndexCardReader({detailedOutput: detailedOutput});
 	var comparator = new IndexCardComparator();
 
 	var modelFiles;
@@ -49,13 +49,13 @@ function main(args)
 				})
 			}
 
-			processAllModels(modelFiles, reader, modelData, processModelData);
+			processAllModels(modelFiles, processor, modelData, processModelData);
 		});
 	}
 	else
 	{
 		modelFiles = [model];
-		processAllModels(modelFiles, reader, modelData, processModelData);
+		processAllModels(modelFiles, processor, modelData, processModelData);
 	}
 
 	function processModelData(modelData)
@@ -81,32 +81,36 @@ function main(args)
 					})
 				}
 
-				processAllFragments(files, reader, comparator, output, printStats);
+				processAllFragments(files, processor, comparator, output, printStats);
 			});
 		}
+		// single file
 		else
 		{
 			var fragmentPattern = null;
 
-			if(reader.isJSONArray(fragment))
+			if(processor.isJSONArray(fragment))
 			{
 				// in order to properly read an array of data we need "*" as pattern
 				fragmentPattern = "*";
 			}
 
-			reader.readCards(fragment, fragmentPattern, function (inferenceData)
+			processor.readCards(fragment, fragmentPattern, function (inferenceData)
 			{
 				var result = comparator.compareCards(inferenceData);
+
+				// TODO if the JSON is too big we still get RangeError...
+				// find a proper way to write with a stream
 
 				// assuming output is a file
 				if (output != null)
 				{
-					generateOutput(output, result);
+					processor.writeWithStream(output, result);
 				}
 				else
 				{
 					// write to std out
-					generateOutput(process.stdout, result);
+					processor.writeWithStream(process.stdout, result);
 				}
 
 				printStats(comparator, output);
@@ -115,12 +119,12 @@ function main(args)
 	}
 }
 
-function processAllModels(files, reader, modelData, callback)
+function processAllModels(files, processor, modelData, callback)
 {
 	var filename = files.pop();
 	var pattern;
 
-	if(reader.isJSONArray(filename))
+	if(processor.isJSONArray(filename))
 	{
 		// in order to properly read an array of data we need "*" as pattern
 		// (assuming the data file contains a single JSON array)
@@ -132,7 +136,7 @@ function processAllModels(files, reader, modelData, callback)
 		pattern = null;
 	}
 
-	reader.readCards(filename, pattern, function (data) {
+	processor.readCards(filename, pattern, function (data) {
 		if (_.isArray(data))
 		{
 			modelData = modelData.concat(data);
@@ -146,7 +150,7 @@ function processAllModels(files, reader, modelData, callback)
 		// more files to process
 		if (files.length > 0)
 		{
-			processAllModels(files, reader, modelData, callback);
+			processAllModels(files, processor, modelData, callback);
 		}
 		// finished processing all files
 		else
@@ -159,18 +163,18 @@ function processAllModels(files, reader, modelData, callback)
 	});
 }
 
-function processAllFragments(files, reader, comparator, output, callback)
+function processAllFragments(files, processor, comparator, output, callback)
 {
 	var filename = files.pop();
 
 	var pattern = null;
 
-	if (reader.isJSONArray(filename))
+	if (processor.isJSONArray(filename))
 	{
 		pattern = "*";
 	}
 
-	reader.readCards(filename, pattern, function (inferenceData)
+	processor.readCards(filename, pattern, function (inferenceData)
 	{
 		var result = comparator.compareCards(inferenceData);
 		var outputFile;
@@ -188,12 +192,14 @@ function processAllFragments(files, reader, comparator, output, callback)
 			outputFile = output + "/" + filename.substr(filename.lastIndexOf("/"));
 		}
 
-		generateOutput(outputFile, result);
+		// this generates an additional _match.json file
+		// TODO find a way to write with streams without generating separate _match.json files
+		processor.writeWithoutStream(outputFile, result);
 
 		// more files to process
 		if (files.length > 0)
 		{
-			processAllFragments(files, reader, comparator, output, callback);
+			processAllFragments(files, processor, comparator, output, callback);
 		}
 		// finished processing all files
 		else
@@ -213,83 +219,6 @@ function printStats(comparator, output)
 	console.log(JSON.stringify(stats, null, 4));
 }
 
-function generateOutput(output, json)
-{
-	var outputJson = [];
-	var match = null;
-
-	if (_.isArray(json))
-	{
-		_.each(json, function(ele, idx) {
-			var clone = _.extend({}, ele);
-			outputJson.push(clone);
-			// remove match array (comment out for debug)
-			delete clone.match;
-		});
-
-		if (outputJson.length === 1)
-		{
-			outputJson = outputJson[0];
-			// TODO handle the match array separately for now...
-			match = json[0].match;
-		}
-	}
-	else
-	{
-		outputJson = _.extend({}, json);
-		// remove match array (comment out for debug)
-		delete outputJson.match;
-
-		// TODO handle the match array separately for now...
-		match = json.match;
-	}
-
-	// TODO move this into IndexCardReader (and rename the class to IndexCardIO)
-	var	writeStream;
-	var matchWriteStream = null;
-
-	if (output === process.stdout)
-	{
-		writeStream = process.stdout;
-	}
-	else
-	{
-		writeStream = fs.createWriteStream(output, {encoding: 'utf8'});
-
-		if (match != null)
-		{
-			matchWriteStream = fs.createWriteStream(
-				output.substr(0, output.lastIndexOf(".")) + "_match.json",
-				{encoding: 'utf8'});
-		}
-	}
-
-	var	stringifier = JSONStream.stringify(false, "\n", false, 4);
-	stringifier.pipe(writeStream);
-	stringifier.write(outputJson);
-
-	// close stream if it is not stdout
-	if (writeStream !== process.stdout)
-	{
-		writeStream.end();
-	}
-
-	if (matchWriteStream != null)
-	{
-		stringifier = JSONStream.stringify('[\n', ',\n', '\n]\n', 4);
-		stringifier.pipe(matchWriteStream);
-
-		_.each(match, function(indexCard, idx) {
-			stringifier.write(indexCard);
-		});
-
-		matchWriteStream.end();
-	}
-
-	// using JSON.stringify for huge JSONs may fail
-	//JSON.stringify(outputJson, null, 4);
-}
-
 function invalidArgs()
 {
 	console.log("ERROR: Invalid or missing arguments.\n");
@@ -302,6 +231,7 @@ function invalidArgs()
 	usage.push('-o, --output <path>:\tPath for the output file or directory.');
 	usage.push('-f, --model-filter <regexp>:\tOptional filter for model filename.');
 	usage.push('-g, --fragment-filter <regexp>:\tOptional filter for fragment filename.');
+	usage.push('-d, --detailed-output:\tOptional flag to indicate output files with details.');
 
 	console.log(usage.join("\n"));
 }
