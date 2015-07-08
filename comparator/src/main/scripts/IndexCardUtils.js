@@ -68,7 +68,7 @@ var IndexCardUtils = (function()
 		// else it is a simple participant
 		else
 		{
-			var id = participant["identifier"];
+			var id = normalizeId(participant["identifier"]);
 
 			// if the identifier field exists
 			if (id != null)
@@ -139,6 +139,31 @@ var IndexCardUtils = (function()
 		};
 	}
 
+	/**
+	 * Normalizes the given id by removing any character before ":"
+	 *
+	 * @param id         original id
+	 * @returns {string} normalized id
+	 */
+	function normalizeId(id)
+	{
+		if (!id)
+		{
+			return id;
+		}
+
+		var parts = id.toLowerCase().split(":");
+
+		if (parts.length > 1)
+		{
+			return parts[1].trim();
+		}
+		else
+		{
+			return id.toLowerCase().trim();
+		}
+	}
+
 	return {
 		intersect: intersect,
 		extractAllIds: extractAllIds,
@@ -151,7 +176,8 @@ var IndexCardUtils = (function()
 		hasBind: hasBind,
 		hasIncreaseDecrease: hasIncreaseDecrease,
 		getModifications: getModifications,
-		getTranslocation: getTranslocation
+		getTranslocation: getTranslocation,
+		normalizeId : normalizeId
 	};
 })();
 

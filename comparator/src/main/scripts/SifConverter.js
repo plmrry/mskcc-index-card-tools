@@ -33,8 +33,8 @@ var SifConverter = function(mappingFile)
 		_.each(aIds, function(aId, idx) {
 			_.each(bIds, function(bId, idx) {
 				// skip ungrounded and non mapped
-				var aHgnc = _hgncMap[normalizeId(aId)];
-				var bHgnc = _hgncMap[normalizeId(bId)];
+				var aHgnc = _hgncMap[IndexCardUtils.normalizeId(aId)];
+				var bHgnc = _hgncMap[IndexCardUtils.normalizeId(bId)];
 
 				if (isValidId(aId) &&
 				    isValidId(bId) &&
@@ -80,25 +80,6 @@ var SifConverter = function(mappingFile)
 		return (id &&
 		        id.length > 0 &&
 		        id.toLowerCase() != "ungrounded");
-	}
-
-	function normalizeId(id)
-	{
-		if (!id)
-		{
-			return id;
-		}
-
-		var parts = id.toLowerCase().split(":");
-
-		if (parts.length > 1)
-		{
-			return parts[1];
-		}
-		else
-		{
-			return id.toLowerCase();
-		}
 	}
 
 	function updateNetwork(sifNetwork)
