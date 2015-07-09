@@ -8,7 +8,8 @@ var es = require('event-stream');
 var IndexCardIO = function(options)
 {
 	var _defaultOpts = {
-		detailedOutput: false
+		detailedOutput: false,  // true: output will include all matching cards info
+		fullCards: false        // true: full matching card content instead of the id
 	};
 
 	var _options = _.extend({}, _defaultOpts, options);
@@ -76,18 +77,34 @@ var IndexCardIO = function(options)
 	{
 		var outputJson = [];
 
+		var updateMatch = function(json)
+		{
+			// remove match array if no detailed output wanted
+			if (!_options.detailedOutput)
+			{
+				delete json.match;
+			}
+			else if (!_options.fullCards)
+			{
+				_.each(json.match, function(match, idx) {
+					// remove card and write card id only
+					if (match.card["card_id"])
+					{
+						match.cardId = match.card["card_id"];
+						delete match.card;
+					}
+				});
+			}
+
+			return json;
+		};
+
 		if (_.isArray(json))
 		{
 			_.each(json, function (ele, idx)
 			{
 				var clone = _.extend({}, ele);
-				outputJson.push(clone);
-
-				// remove match array
-				if (!_options.detailedOutput)
-				{
-					delete clone.match;
-				}
+				outputJson.push(updateMatch(clone));
 			});
 
 			if (outputJson.length === 1)
@@ -98,11 +115,7 @@ var IndexCardIO = function(options)
 		else
 		{
 			outputJson = _.extend({}, json);
-			// remove match array
-			if (!_options.detailedOutput)
-			{
-				delete outputJson.match;
-			}
+			outputJson = updateMatch(outputJson);
 		}
 
 		return outputJson;
@@ -163,9 +176,8 @@ var IndexCardIO = function(options)
 
 			fs.appendFileSync(matchFile, "[\n");
 
-			_.each(json.match, function(matchInfo, idx) {
-				fs.appendFileSync(matchFile,
-				                  JSON.stringify(matchInfo, null, 4));
+			_.each(json.match, function(match, idx) {
+				fs.appendFileSync(matchFile, JSON.stringify(match, null, 4));
 
 				if (idx < json.match.length - 1)
 				{

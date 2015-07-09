@@ -15,6 +15,7 @@ function main(args)
 	var modelFilter = args["f"] || args["model-filter"];
 	var fragmentFilter = args["g"] || args["fragment-filter"];
 	var detailedOutput = args["d"] || args["detailed-output"];
+	var fullMatchingCards = args["c"] || args["full-cards"];
 
 	if (model == null || fragment == null)
 	{
@@ -22,7 +23,11 @@ function main(args)
 		return 1;
 	}
 
-	var processor = new IndexCardIO({detailedOutput: detailedOutput});
+	var processor = new IndexCardIO({
+		detailedOutput: detailedOutput,
+		fullCards: fullMatchingCards
+	});
+
 	var comparator = new IndexCardComparator();
 
 	var modelFiles;
@@ -231,6 +236,7 @@ function invalidArgs()
 	usage.push('-f, --model-filter <regexp>:\tOptional filter for model filename.');
 	usage.push('-g, --fragment-filter <regexp>:\tOptional filter for fragment filename.');
 	usage.push('-d, --detailed-output:\tOptional flag to indicate output files with details.');
+	usage.push('-c, --full-cards:\tOptional flag to write output with full matching card content.');
 
 	console.log(usage.join("\n"));
 }
