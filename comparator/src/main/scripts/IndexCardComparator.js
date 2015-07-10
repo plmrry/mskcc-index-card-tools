@@ -569,7 +569,8 @@ var IndexCardComparator = function()
 			}
 
 			if (result == DISTINCT &&
-			    isOppositeInteractions(indexCard, card))
+			    isOppositeInteractions(indexCard, card) &&
+			    IndexCardUtils.hasValidParticipantA(indexCard))
 			{
 				conflict = true;
 			}
@@ -580,20 +581,39 @@ var IndexCardComparator = function()
 
 	function compareParticipantA(indexCard, matchingCards)
 	{
-		var indexCardPaIds = IndexCardUtils.extractAllIds(IndexCardUtils.participantA(indexCard));
+		// when the index card has no valid participant A,
+		// then comparison should not be distinct
+		if (!IndexCardUtils.hasValidParticipantA(indexCard))
+		{
+			_.each(indexCard["match"], function(ele, idx){
+				if (!IndexCardUtils.hasValidParticipantA(ele.card))
+				{
+					ele.participantA = EXACT;
+				}
+				else
+				{
+					ele.participantA = SUBSET;
+				}
+			});
+		}
+		else
+		{
+			var indexCardPaIds = IndexCardUtils.extractAllIds(
+				IndexCardUtils.participantA(indexCard));
 
-		_.each(indexCard["match"], function(ele, idx){
-			var card = ele.card;
-			var matchedCardPaIds = IndexCardUtils.extractAllIds(IndexCardUtils.participantA(card));
+			_.each(indexCard["match"], function(ele, idx){
+				var matchedCardPaIds = IndexCardUtils.extractAllIds(
+					IndexCardUtils.participantA(ele.card));
 
-			var result = compare(indexCardPaIds,
-			                     matchedCardPaIds,
-			                     _participantId.strongEquality,
-			                     _participantId.weakEquality,
-			                     _participantId.weakDiff);
+				var result = compare(indexCardPaIds,
+				                     matchedCardPaIds,
+				                     _participantId.strongEquality,
+				                     _participantId.weakEquality,
+				                     _participantId.weakDiff);
 
-			ele.participantA = result;
-		});
+				ele.participantA = result;
+			});
+		}
 	}
 
 	function compareBind(indexCard, matchingCards)
@@ -663,7 +683,8 @@ var IndexCardComparator = function()
 				var conflict = false;
 
 				if (result != DISTINCT &&
-				    isOppositeInteractions(indexCard, card))
+				    isOppositeInteractions(indexCard, card) &&
+				    IndexCardUtils.hasValidParticipantA(indexCard))
 				{
 					conflict = true;
 				}
@@ -691,7 +712,8 @@ var IndexCardComparator = function()
 				// in case of DISTINCT result, check if there is a potential conflict
 				var conflict = false;
 
-				if (result == DISTINCT)
+				if (result == DISTINCT &&
+				    IndexCardUtils.hasValidParticipantA(indexCard))
 				{
 					conflict = translocation.to &&
 					           translocation.from &&
@@ -773,6 +795,22 @@ var IndexCardComparator = function()
 		if (strongIntersection.length === 0 &&
 		    weakIntersection.length === 0)
 		{
+			//// both empty sets!
+			//if (inferenceSet.length === 0 && modelSet.length === 0)
+			//{
+			//	return EXACT;
+			//}
+			//// inference set is empty, so it is a subset of model set
+			//else if (inferenceSet.length === 0 && modelSet.length > 0)
+			//{
+			//	return SUBSET;
+			//}
+			//// model set set is empty, so inference set is a superset of model set
+			//else if (inferenceSet.length === 0 && modelSet.length > 0)
+			//{
+			//	return SUPERSET;
+			//}
+
 			// distinct: no matching element
 			return DISTINCT;
 		}
