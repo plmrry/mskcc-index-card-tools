@@ -32,8 +32,10 @@ var IndexCardUtils = (function()
 	 * @param familyMembersFn optional function to retrieve the family members
 	 * @returns {Array}       extracted ids as an array
 	 */
-	function extractAllIds(participant, familyMembersFn)
+	function extractAllIds(participant, familyMembersFn, normalize)
 	{
+		if (typeof normalize === "undefined") normalize = true;
+
 		// set a default family member extraction function if none provided
 		familyMembersFn = familyMembersFn || function(participant) {
 			return participant["family_members"];
@@ -53,7 +55,7 @@ var IndexCardUtils = (function()
 		if (_.isArray(participant))
 		{
 			_.each(participant, function(ele, idx) {
-				ids = ids.concat(extractAllIds(ele, familyMembersFn));
+				ids = ids.concat(extractAllIds(ele, familyMembersFn, normalize));
 			});
 		}
 		// if entity type is protein family,
@@ -62,13 +64,15 @@ var IndexCardUtils = (function()
 		         familyMembers != null)
 		{
 			_.each(familyMembers, function(ele, idx) {
-				ids = ids.concat(extractAllIds(ele, familyMembersFn));
+				ids = ids.concat(extractAllIds(ele, familyMembersFn, normalize));
 			});
 		}
 		// else it is a simple participant
 		else
 		{
 			var id = normalizeId(participant["identifier"]);
+
+			if (! normalize) id = participant["identifier"];
 
 			// if the identifier field exists
 			if (id != null)

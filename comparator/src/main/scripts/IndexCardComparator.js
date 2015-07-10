@@ -740,7 +740,7 @@ var IndexCardComparator = function()
 		var equalTo = (translocationA.to == null && translocationB.to == null) ||
 			(translocationA.to != null && translocationB.to != null &&
 			translocationA.to.toLowerCase() == translocationB.to.toLowerCase());
-		
+
 		return equalTo && equalFrom;
 	}
 
@@ -915,6 +915,10 @@ var IndexCardComparator = function()
 	this.compareCards = compareCards;
 	this.loadModel = loadModel;
 	this.getStats = getStats;
+	// Added by Paul Murray 7/9/15
+	this.matchFilter = matchFilter;
+	this.findModelRelation = findModelRelation;
+	this.classify = classify;
 };
 
 module.exports = IndexCardComparator;
