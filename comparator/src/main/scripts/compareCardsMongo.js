@@ -21,7 +21,7 @@ var matches_collection = db.get("card_matches");
 * Based on compareCards in IndexCardComparator.js
 */
 
-var i = 0;
+var i = 0, j = 0;
 
 var MAX_MATCHES = 20e4;
 
@@ -33,15 +33,32 @@ var go = function() {
 	// var query = { _filename: "PMC2118656-card-evem-PMC2118656-UAZ-r1-37-0-15" }
 	// var query = { _filename: "PMC2845649-card-evem-PMC2845649-UAZ-r1-6-6-165" } // filesize: 2.5 MB matches: 1289
 
+	var matchFilter = comparator.matchFilter;
+
 	var inference_cards = new Promise(function(resolve) {
-		// fries_cards.findOne(query).then(resolve);
 		fries_cards.find({}).then(resolve);
 	});
 
-	var matchFilter = comparator.matchFilter;
+	var not_in_collection = inference_cards
+		.map(function(inference_card) {
+			return matches_collection.find({ _id: inference_card._id })
+				.then(function(found) {
+					if (found.length > 0) {
+						return { card: inference_card, found: true };
+					}
+					else {
+						return { card: inference_card, found: false };
+					}
+				});
+		}, { concurrency: 1 })
+		.filter(function(obj) {
+			return ! obj.found;
+		})
+		.map(function(obj) {
+			return obj.card
+		});
 
-	inference_cards
-		.each(function(inference_card) {
+	not_in_collection.each(function(inference_card) {
 			var matches = new Promise(function(resolve) {
 				var query = getMatchQuery(inference_card);
 				pc_cards.find(query).then(resolve)
@@ -83,9 +100,13 @@ var go = function() {
 					return classified;
 				})
 				.then(function(pruned) {
-					return matches_collection.insert(pruned).then(function(d) {
-						console.log("inserted one. " + ++i);
-					})
+					var foo = matches_collection.insert(pruned)
+						.then(function(d) {
+							console.log("inserted one. " + ++i);
+						}, function(e) {
+							console.log("hey it didn't work ", e.err);
+						});
+
 				})
 		})
 		.then(function() {
