@@ -48,15 +48,16 @@ public class PathwayCardMiner
 
 		SimpleIOHandler io = new SimpleIOHandler();
 
-//		Model model = io.convertFromOWL(new GZIPInputStream(new URL(
-//			"http://www.pathwaycommons.org/pc2/downloads/Pathway%20Commons.7.All.BIOPAX.owl.gz").
-//			openStream()));
-		Model model = io.convertFromOWL(new FileInputStream("/home/ozgun/Documents/Darpa/BigMech/evaluation/Ras-2-neighborhood.owl"));
+		Model model = io.convertFromOWL(new GZIPInputStream(new URL(
+			"http://www.pathwaycommons.org/pc2/downloads/Pathway%20Commons.7.All.BIOPAX.owl.gz").
+			openStream()));
+//		Model model = io.convertFromOWL(new FileInputStream("/home/ozgun/Downloads/EGFR-downregulation.owl"));
 //		Model model = io.convertFromOWL(new FileInputStream("/home/demir/Documents/Ras-2-neighborhood.owl"));
 
 		mcm.mineAndCollect(model);
+		mcm.addIDs();
 		mcm.printGroundingStats();
-		mcm.writeResults("/home/ozgun/Documents/Darpa/BigMech/evaluation/Ras-2-neighborhood.json");
+		mcm.writeResults("/home/ozgun/Documents/Darpa/BigMech/evaluation/PC.json");
 //		mcm.writeResults("/home/demir/Documents/PCall.json");
 	}
 
@@ -431,6 +432,16 @@ public class PathwayCardMiner
 
 			try { miner.writeResult(matches, null);
 			} catch (IOException e){e.printStackTrace();}
+		}
+	}
+
+	public void addIDs()
+	{
+		int i = 1;
+		for (Object obj : cards)
+		{
+			Map card = (Map) obj;
+			card.put("card_id", "" + i++);
 		}
 	}
 
