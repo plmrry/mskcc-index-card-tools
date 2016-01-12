@@ -1,9 +1,17 @@
 {
   "private": true,
+  "name": "index-card-comparator",
+  "version": "0.0.1",
   "dependencies": {
-    "bluebird": "^2.9.33",
+  	"bluebird": "^2.9.33",
     "mongodb": "^2.0.36",
     "monk": "^1.0.1",
-    "underscore": "^1.8.3"
+    "underscore": "^1.8.3",
+    "fs": "^0.0.2",
+    "process": "^0.11.2",
+    "underscore": "^1.8.3",
+    "minimist": "^1.2.0",
+    "JSONStream": "^1.0.6",
+    "event-stream": "3.3.2"
   }
 }

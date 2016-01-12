@@ -44,7 +44,7 @@ var IndexCardUtils = (function()
 		var ids = [];
 
 		// participant is null, return empty set...
-		if (!participant)
+		if (!participant || participant["entity_type"] == "N/A")
 		{
 			return ids;
 		}
@@ -130,9 +130,51 @@ var IndexCardUtils = (function()
 		return interactionType(indexCard).toLowerCase().indexOf("binds") != -1;
 	}
 
+	function hasValidParticipantA(indexCard)
+	{
+		return (participantA(indexCard) != null &&
+			participantA(indexCard)["entity_type"] != "N/A");
+	}
+
 	function getModifications(indexCard)
 	{
-		return indexCard["extracted_information"]["modifications"];
+		var modifications = indexCard["extracted_information"]["modifications"];
+
+		// considering the case where the position field is actually
+		// a "positions" array
+		if (_.isArray(modifications))
+		{
+			var mods = [];
+
+			_.each(modifications, function(modification, idx) {
+				if (_.isArray(modification.position))
+				{
+					if (modification.position.length === 0)
+					{
+						// remove empty position array
+						var newMod = _.extend({}, modification);
+						delete newMod.position;
+						mods.push(newMod);
+					}
+					else
+					{
+						_.each(modification.position, function(pos, idx){
+							var newMod = _.extend({}, modification);
+							newMod.position = pos;
+							mods.push(newMod);
+						});
+					}
+				}
+				else
+				{
+					mods.push(modification);
+				}
+			});
+
+			modifications = mods;
+		}
+
+		return modifications;
 	}
 
 	function getTranslocation(indexCard)
@@ -177,6 +219,7 @@ var IndexCardUtils = (function()
 		hasTranslocation: hasTranslocation,
 		hasModification: hasModification,
 		hasActivity: hasActivity,
+		hasValidParticipantA: hasValidParticipantA,
 		hasBind: hasBind,
 		hasIncreaseDecrease: hasIncreaseDecrease,
 		getModifications: getModifications,

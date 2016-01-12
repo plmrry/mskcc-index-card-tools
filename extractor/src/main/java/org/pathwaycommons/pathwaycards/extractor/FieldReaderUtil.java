@@ -247,6 +247,18 @@ public class FieldReaderUtil
 		return "null";
 	}
 
+	public static List<String> getNames(Named named)
+	{
+		Set<String> set = new HashSet<>();
+		set.addAll(named.getName());
+		if (named instanceof SimplePhysicalEntity)
+		{
+			EntityReference er = ((SimplePhysicalEntity) named).getEntityReference();
+			if (er != null) set.addAll(er.getName());
+		}
+		return new ArrayList<>(set);
+	}
+
 	public static boolean isGrounded(Object jsonObj)
 	{
 		if (jsonObj instanceof List)
@@ -276,7 +288,7 @@ public class FieldReaderUtil
 		{
 			Map map = new LinkedHashMap();
 			map.put("entity_type", "protein_family");
-			map.put("entity_text", pickAName(pe));
+			map.put("entity_text", getNames(pe));
 			List list = new ArrayList();
 			map.put("family_members", list);
 
@@ -294,7 +306,7 @@ public class FieldReaderUtil
 			{
 				Map map = new LinkedHashMap();
 				map.put("entity_type", "protein_family");
-				map.put("entity_text", pickAName(pe));
+				map.put("entity_text", getNames(pe));
 				List list = new ArrayList();
 				map.put("family_members", list);
 
@@ -325,7 +337,7 @@ public class FieldReaderUtil
 			{
 				Map map = new LinkedHashMap();
 				map.put("entity_type", "protein_family");
-				map.put("entity_text", pickAName(pe));
+				map.put("entity_text", getNames(pe));
 				return map;
 			}
 		}
@@ -334,13 +346,14 @@ public class FieldReaderUtil
 		Map map = new LinkedHashMap();
 		String upn = pe instanceof Protein ? getUniProtID(pe) : pe instanceof SmallMolecule ? getPubChemID(pe) : null;
 		String sym = getHGNCSymbol(pe);
-		String name = pickAName(pe);
 
 		String type = pe instanceof Protein ? "protein" : pe instanceof SmallMolecule ? "chemical" :
-			pe instanceof Rna ? "RNA" : pe instanceof Dna ? "DNA" : "Unclassified";
+			pe instanceof Rna || pe instanceof RnaRegion ? "RNA" :
+				pe instanceof Dna || pe instanceof DnaRegion ? "DNA" :
+					"Unclassified";
 
 		map.put("entity_type", type);
-		map.put("entity_text", name);
+		map.put("entity_text", getNames(pe));
 		if (upn != null || sym != null)
 		{
 			map.put("identifier", upn != null ? upn : sym);
@@ -364,7 +377,7 @@ public class FieldReaderUtil
 		{
 			Map map = new LinkedHashMap();
 			map.put("entity_type", "protein_family");
-			map.put("entity_text", pickAName(er));
+			map.put("entity_text", getNames(er));
 			List list = new ArrayList();
 			map.put("family_members", list);
 
