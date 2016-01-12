@@ -1,0 +1,9 @@
+{
+  "private": true,
+  "dependencies": {
+    "bluebird": "^2.9.33",
+    "mongodb": "^2.0.36",
+    "monk": "^1.0.1",
+    "underscore": "^1.8.3"
+  }
+}
